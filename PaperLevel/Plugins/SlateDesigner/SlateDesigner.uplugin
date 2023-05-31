@@ -1,0 +1,23 @@
+{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "SlateDesigner",
+	"Description": "",
+	"Category": "Other",
+	"CreatedBy": "Will Inman",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"EngineVersion": "5.1.0",
+	"CanContainContent": false,
+	"Installed": true,
+	"Modules": [
+		{
+			"Name": "SlateDesigner",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		}
+	]
+}
