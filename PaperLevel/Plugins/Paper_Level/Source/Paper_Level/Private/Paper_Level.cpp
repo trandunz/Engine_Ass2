@@ -10,7 +10,7 @@
 #include "SPaperLevelMenu.h"
 #include "ToolMenus.h"
 
-static const FName Paper_LevelTabName("Paper_Level");
+static const FName Paper_LevelTabName("Paper Level");
 
 #define LOCTEXT_NAMESPACE "FPaper_LevelModule"
 
@@ -33,7 +33,7 @@ void FPaper_LevelModule::StartupModule()
 	UToolMenus::RegisterStartupCallback(FSimpleMulticastDelegate::FDelegate::CreateRaw(this, &FPaper_LevelModule::RegisterMenus));
 	
 	FGlobalTabmanager::Get()->RegisterNomadTabSpawner(Paper_LevelTabName, FOnSpawnTab::CreateRaw(this, &FPaper_LevelModule::OnSpawnPluginTab))
-		.SetDisplayName(LOCTEXT("FPaper_LevelTabTitle", "Paper_Level"))
+		.SetDisplayName(LOCTEXT("FPaper_LevelTabTitle", "Paper Level"))
 		.SetMenuType(ETabSpawnerMenuType::Hidden);
 }
 
@@ -73,9 +73,9 @@ void FPaper_LevelModule::RegisterMenus()
 	FToolMenuOwnerScoped OwnerScoped(this);
 
 	{
-		UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Window");
+		UToolMenu* Menu = UToolMenus::Get()->ExtendMenu("LevelEditor.MainMenu.Tools");
 		{
-			FToolMenuSection& Section = Menu->FindOrAddSection("WindowLayout");
+			FToolMenuSection& Section = Menu->FindOrAddSection("Programming");
 			Section.AddMenuEntryWithCommandList(FPaper_LevelCommands::Get().OpenPluginWindow, PluginCommands);
 		}
 	}

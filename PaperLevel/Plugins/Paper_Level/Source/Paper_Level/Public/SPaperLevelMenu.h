@@ -18,12 +18,29 @@ public:
 	/** Constructs this widget with InArgs */
 	void Construct(const FArguments& InArgs);
 
+	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
+
 	/**
  	* @brief Create The Slate Designer Menu
  	*/
-	void InitSlateDesignerMenu();
+	void InitPaperLevelMenu();
+
+	TSharedRef<SBorder> InitPaperLevelMenuContents();
+
+	void CreatePaperMapGrid();
+	void CreateSymbolsGrid();
+	
+	void OnButtonClicked();
+	void OnMapNameChanged(const FText&);
+
+	void OnEraserClicked();
+	void OnUndoClicked();
+	void OnRedoClicked();
 
 private:
+	FString ToBeMapName{"Default Map Name"};
+	
 	SVerticalBox* ParentBox{nullptr};
-	UE::Math::TMatrix<SBorder*> WorldGrid{};
+	TMap<FUintVector2, TSharedRef<SBorder>> WorldGrid{};
+	TMap<FUintVector2, TSharedRef<SBorder>> SymbolsGrid{};
 };

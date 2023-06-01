@@ -42,8 +42,8 @@ public class Paper_Level : ModuleRules
 				"CoreUObject",
 				"Engine",
 				"Slate",
-				"SlateCore", "SlateDesigner",
-				// ... add private dependencies that you statically link with here ...	
+				"SlateCore", 
+				"SlateDesigner"
 			}
 			);
 		

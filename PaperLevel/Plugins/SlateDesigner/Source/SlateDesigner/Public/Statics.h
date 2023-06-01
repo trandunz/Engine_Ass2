@@ -102,6 +102,15 @@ public:
 	static TSharedRef<SBorder> WrapWidgetInScrollBox(TSharedRef<T> _widget);
 
 	/**
+ 	* @brief Wraps the specified widget inside of a scroll box and returns a border
+ 	* @tparam T 
+ 	* @param _widget 
+ 	* @return 
+ 	*/
+	template<class T>
+	static TSharedRef<SBorder> WrapWidgetInBorder(TSharedRef<T> _widget);
+
+	/**
 	 * @brief Returns a border containing a centered textblock
 	 * @param _text 
 	 * @param _underline 
@@ -226,6 +235,28 @@ inline TSharedRef<SBorder> Statics::WrapWidgetInScrollBox(TSharedRef<T> _widget)
 				[
 					_widget
 				]
+				]
+			];
+}
+
+template <class T>
+TSharedRef<SBorder> Statics::WrapWidgetInBorder(TSharedRef<T> _widget)
+{
+	return SNew(SBorder)
+			.Padding(1)
+			.BorderImage(FAppStyle::Get().GetBrush("DetailsView.CategoryMiddle"))
+			.BorderBackgroundColor(FLinearColor(0,0,0))
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Top)
+			[
+				SNew(SBorder)
+				.Padding(5)
+				.BorderImage(FAppStyle::Get().GetBrush("DetailsView.CategoryMiddle"))
+				.BorderBackgroundColor(GetInnerBackgroundColor())
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Center)
+				[
+					_widget
 				]
 			];
 }
