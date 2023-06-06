@@ -2,7 +2,22 @@
 
 
 #include "SPaperLevelMenu.h"
+
+#include "LineTypes.h"
+#include "SlateMaterialBrush.h"
+#include "AssetRegistry/AssetRegistryModule.h"
+#include "Brushes/SlateImageBrush.h"
 #include "SlateDesigner/Public/Statics.h"
+#include "Styling/SlateStyleMacros.h"
+#include "Framework/Application/SlateApplication.h"
+#include "Styling/SlateStyleRegistry.h"
+#include "Slate/SlateGameResources.h"
+#include "Interfaces/IPluginManager.h"
+#include "Styling/SlateStyleMacros.h"
+#include "Windows/WindowsPlatformApplicationMisc.h"
+#include "PixelFormat.h"
+#include "Engine/Texture2D.h"
+#include "Engine/TextureDefines.h"
 
 BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
 
@@ -25,6 +40,8 @@ void SPaperLevelMenu::Construct(const FArguments& InArgs)
 	// add the parent vertical box too the scroll box
 	scrollBox->AddSlot()
 	.AttachWidget(newParent);
+
+	ParentBox->SetOnMouseButtonUp(FPointerEventHandler::CreateSP(this, &SPaperLevelMenu::OnImageMouseButtonUp));
 	
 	// Assign Finished Parent (the scroll box)
 	ChildSlot
@@ -37,8 +54,7 @@ void SPaperLevelMenu::Tick(const FGeometry& AllottedGeometry, const double InCur
 {
 	SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
 
-	auto mousePos = FSlateApplication::Get().GetCursorPos();
-	UE_LOG(LogTemp, Warning, TEXT("Mouse X: %s | Mouse Y: %s"), *FString::FromInt(mousePos.X), *FString::FromInt(mousePos.Y) );
+	HandleTexturePainting();
 }
 
 void SPaperLevelMenu::InitPaperLevelMenu()
@@ -73,33 +89,18 @@ TSharedRef<SBorder> SPaperLevelMenu::InitPaperLevelMenuContents()
 	auto gridAndControlsSplitter = SNew(SHorizontalBox);
 	gridAndControlsSplitter->AddSlot()
 	.AutoWidth()
+	.HAlign(HAlign_Left)
 	[
-		vertBox
+		CreateMapImage()
 	];
-
-	// Create all the buttons
-	CreatePaperMapGrid();
 	
-	for(unsigned y = 0; y < 10; y++ )
-	{
-		auto horizonBox = SNew(SHorizontalBox);
-		for(unsigned x = 0; x < 10; x++ )
-		{
-			horizonBox->AddSlot()
-			.HAlign(HAlign_Center)
-			.AutoWidth()
-			[
-				WorldGrid[{x,y}]
-			];
-		}
-		
-		vertBox->AddSlot()
-		.HAlign(HAlign_Center)
-		.AutoHeight()
-		[
-			horizonBox
-		];
-	}
+	// Add the image widget to the widget tree
+	//vertBox->AddSlot()
+	//.HAlign(HAlign_Center)
+	//.AutoHeight()
+	//[
+	//	CreateMapImage()
+	//];
 
 	// Create VertBox for Controls
 	auto controlsVertBox = SNew(SVerticalBox);
@@ -257,6 +258,7 @@ TSharedRef<SBorder> SPaperLevelMenu::InitPaperLevelMenuContents()
 	gridAndControlsSplitter->AddSlot()
 	.AutoWidth()
 	.Padding(10.0f, 0)
+	.HAlign(HAlign_Right)
 	.VAlign(VAlign_Center)
 	[
 		controlsVertBox
@@ -280,6 +282,75 @@ TSharedRef<SBorder> SPaperLevelMenu::InitPaperLevelMenuContents()
 			[
 				outerVertBox
 			];
+}
+
+void SPaperLevelMenu::HandleTexturePainting()
+{
+	auto mousePos = FSlateApplication::Get().GetCursorPos();
+
+	if (TextureGeo && IsTrackingMousePos)
+	{
+		auto localMousePosition = TextureGeo->AbsoluteToLocal(mousePos);
+		
+		if (MapImageTexture && MapImageTexture->GetPlatformData())
+		{
+			if (!MapImageTexture->GetPlatformData()->Mips[0].BulkData.IsLocked())
+			{
+				auto mipData = static_cast<RGBA*>(MapImageTexture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+				
+				if (FMath::RoundToInt(localMousePosition.X) >= 0 && FMath::RoundToInt(localMousePosition.X) < 500)
+				{
+					if (FMath::RoundToInt(localMousePosition.Y) >= 0 && FMath::RoundToInt(localMousePosition.Y) < 500)
+					{
+						int32 index = FMath::RoundToInt(localMousePosition.Y) * 500 + FMath::RoundToInt(localMousePosition.X);
+
+						mipData[index].A = 1;
+						mipData[index].G = 0;
+						mipData[index].B = 0;
+						mipData[index].R = 0;
+					}
+				}
+
+				MapImageTexture->GetPlatformData()->Mips[0].BulkData.Unlock();
+
+				// Set the modified data to the texture
+				MapImageTexture->UpdateResource();
+				
+				MapImageBrush->SetResourceObject(MapImageTexture);
+				
+				UE_LOG(LogTemp, Warning, TEXT("Texture Colour Updated") );
+			}
+		}
+	}
+}
+
+TSharedRef<SBorder> SPaperLevelMenu::CreateMapImage()
+{
+	const FName ImageName("PaperLevel");
+	const FVector2D ImageSize(500.0f, 500.0f);
+	const FName StyleSetName("Paper_LevelStyle");
+
+	MapImageBrush = CreateImageBrushFromStyleSet(ImageName, ImageSize, StyleSetName);
+
+	auto image = 	SNew(SImage)
+			.Image(MapImageBrush)
+			.OnMouseButtonDown(this, &SPaperLevelMenu::OnImageMouseButtonDown)
+			.ColorAndOpacity(FLinearColor::White);
+
+	MapImageToPaint = &image.Get();
+
+	TextureGeo = &MapImageToPaint->GetTickSpaceGeometry();
+	
+	// wrap image in a border
+	return SNew(SBorder)
+	.Padding(1)
+	.BorderImage(FAppStyle::Get().GetBrush("DetailsView.CategoryMiddle"))
+	.BorderBackgroundColor(Statics::GetInnerBackgroundColor())
+	.HAlign(HAlign_Center)
+	.VAlign(VAlign_Center)
+	[
+		MapImageToPaint->AsShared()
+	];
 }
 
 void SPaperLevelMenu::CreatePaperMapGrid()
@@ -323,6 +394,85 @@ void SPaperLevelMenu::OnUndoClicked()
 
 void SPaperLevelMenu::OnRedoClicked()
 {
+}
+
+FSlateImageBrush* SPaperLevelMenu::CreateImageBrushFromStyleSet(FName ImageName, const FVector2D& ImageSize,
+	const FName& StyleSetName)
+{
+	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	AssetRegistryModule.Get().SearchAllAssets(true);
+	
+	MapImageTexture = UTexture2D::CreateTransient(500.0f, 500.0f, PF_A32B32G32R32F);
+
+	// Set the texture settings and properties
+	MapImageTexture->CompressionSettings = TC_Default;
+	MapImageTexture->MipGenSettings = TMGS_SimpleAverage;
+	MapImageTexture->AddToRoot();
+	
+	if (MapImageTexture->GetPlatformData()->Mips.Num() == 0)
+	{
+		MapImageTexture->GetPlatformData()->Mips.Add(new FTexture2DMipMap{MapImageTexture->GetPlatformData()->SizeX, MapImageTexture->GetPlatformData()->SizeY});
+	}
+
+	//MapImageTexture->CreateResource();
+	MapImageTexture->UpdateResource();
+
+	FVector2D imageSize(500.0f, 500.0f);
+	MapImageBrush = new FSlateImageBrush(MapImageTexture, ImageSize);
+
+	// Set the teexture to white
+	auto mipData = static_cast<RGBA*>(MapImageTexture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+	for(unsigned y = 0; y < 500; y++)
+	{
+		for(unsigned x = 0; x < 500; x++)
+		{
+			int32 index = y * 500 + x;
+
+			mipData[index].A = 1;
+			mipData[index].G = 1;
+			mipData[index].B = 1;
+			mipData[index].R = 1;
+		}
+	}
+	
+	MapImageTexture->GetPlatformData()->Mips[0].BulkData.Unlock();
+
+	// Set the modified data to the texture
+	MapImageTexture->UpdateResource();
+				
+	MapImageBrush->SetResourceObject(MapImageTexture);
+
+	// return image brush
+	return new FSlateImageBrush(
+			   MapImageBrush->GetResourceName(),
+			   imageSize
+		   );
+}
+
+FReply SPaperLevelMenu::OnImageMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
+{
+	if (MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+	{
+		IsTrackingMousePos = true;
+		UE_LOG(LogTemp, Warning, TEXT("Mosue Pressed On Texture") );
+		return FReply::Handled();
+	}
+	
+	return FReply::Unhandled();
+}
+
+FReply SPaperLevelMenu::OnImageMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent)
+{
+	if (MouseEvent.GetEffectingButton() == EKeys::LeftMouseButton)
+	{
+		IsTrackingMousePos = false;
+		UE_LOG(LogTemp, Warning, TEXT("Mouse Released") );
+		return FReply::Handled();
+	}
+
+	
+	
+	return FReply::Unhandled();
 }
 
 END_SLATE_FUNCTION_BUILD_OPTIMIZATION

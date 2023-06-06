@@ -27,6 +27,9 @@ public:
 
 	TSharedRef<SBorder> InitPaperLevelMenuContents();
 
+	void HandleTexturePainting();
+	
+	TSharedRef<SBorder> CreateMapImage();
 	void CreatePaperMapGrid();
 	void CreateSymbolsGrid();
 	
@@ -37,8 +40,30 @@ public:
 	void OnUndoClicked();
 	void OnRedoClicked();
 
+	struct FSlateImageBrush* CreateImageBrushFromStyleSet(FName ImageName, const FVector2D& ImageSize, const FName& StyleSetName);
+
+	FReply OnImageMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent);;
+	FReply OnImageMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent);;
+	
+	
 private:
+	struct RGBA
+	{
+		FFloat32 A{};
+		FFloat32 G{};
+		FFloat32 B{};
+		FFloat32 R{};
+	};
+	
 	FString ToBeMapName{"Default Map Name"};
+	
+	bool IsTrackingMousePos{};
+
+	const struct FGeometry* TextureGeo{};
+	SImage* MapImageToPaint{};
+	struct FSlateImageBrush* MapImageBrush{};
+	UTexture2D* MapImageTexture{};
+	uint8* ImageTextureData{};
 	
 	SVerticalBox* ParentBox{nullptr};
 	TMap<FUintVector2, TSharedRef<SBorder>> WorldGrid{};

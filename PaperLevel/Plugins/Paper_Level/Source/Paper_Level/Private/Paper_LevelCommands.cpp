@@ -6,7 +6,7 @@
 
 void FPaper_LevelCommands::RegisterCommands()
 {
-	UI_COMMAND(OpenPluginWindow, "Paper_Level", "Start Paper Level", EUserInterfaceActionType::Button, FInputChord());
+	UI_COMMAND(OpenPluginWindow, "Paper Level", "Start Paper Level", EUserInterfaceActionType::Button, FInputChord());
 }
 
 #undef LOCTEXT_NAMESPACE
