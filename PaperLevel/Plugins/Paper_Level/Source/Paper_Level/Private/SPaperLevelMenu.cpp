@@ -60,11 +60,10 @@ void SPaperLevelMenu::Tick(const FGeometry& AllottedGeometry, const double InCur
 void SPaperLevelMenu::InitPaperLevelMenu()
 {
 	auto newMenu = SNew(SBorder)
-		.Padding(20)
 		.BorderImage(FAppStyle::Get().GetBrush("DetailsView.CategoryMiddle"))
-		.BorderBackgroundColor(FLinearColor(0.0f,0.0f,0.0f))
-		.HAlign(HAlign_Fill)
-		.VAlign(VAlign_Top)
+		.BorderBackgroundColor(Statics::GetInnerBackgroundColor())
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
 		[
 			InitPaperLevelMenuContents()
 		];
@@ -89,179 +88,20 @@ TSharedRef<SBorder> SPaperLevelMenu::InitPaperLevelMenuContents()
 	auto gridAndControlsSplitter = SNew(SHorizontalBox);
 	gridAndControlsSplitter->AddSlot()
 	.AutoWidth()
+	.Padding(10.0f, 10.0f)
 	.HAlign(HAlign_Left)
 	[
 		CreateMapImage()
 	];
 	
-	// Add the image widget to the widget tree
-	//vertBox->AddSlot()
-	//.HAlign(HAlign_Center)
-	//.AutoHeight()
-	//[
-	//	CreateMapImage()
-	//];
-
-	// Create VertBox for Controls
-	auto controlsVertBox = SNew(SVerticalBox);
-	
-	{
-		// Create all the buttons
-		CreateSymbolsGrid();
-
-		//auto objectControlsBorder = SNew(SBorder);
-	
-		// Add Symbol Constols Title
-		controlsVertBox->AddSlot()
-		.HAlign(HAlign_Center)
-		.AutoHeight()
-		[
-			Statics::CreateNewTitle("Objects")
-		];
-	
-		for(unsigned y = 0; y < 6; y++ )
-		{
-			auto horizonBox = SNew(SHorizontalBox);
-			for(unsigned x = 0; x < 6; x++ )
-			{
-				horizonBox->AddSlot()
-				.HAlign(HAlign_Center)
-				.AutoWidth()
-				[
-					SymbolsGrid[{x,y}]
-				];
-			}
-		
-			controlsVertBox->AddSlot()
-			.HAlign(HAlign_Center)
-			.AutoHeight()
-			[
-				horizonBox
-			];
-		}
-
-		{
-			auto horizonBox = SNew(SHorizontalBox);
-			horizonBox->AddSlot()
-			.HAlign(HAlign_Center)
-			.FillWidth(1)
-			[
-				Statics::CreateButton<SPaperLevelMenu>(this, "Eraser", &SPaperLevelMenu::OnEraserClicked)
-			];
-			horizonBox->AddSlot()
-			.HAlign(HAlign_Center)
-			.FillWidth(1)
-			[
-				Statics::CreateButton<SPaperLevelMenu>(this, "Undo", &SPaperLevelMenu::OnUndoClicked)
-			];
-			horizonBox->AddSlot()
-			.HAlign(HAlign_Center)
-			.FillWidth(1)
-			[
-				Statics::CreateButton<SPaperLevelMenu>(this, "Redo", &SPaperLevelMenu::OnRedoClicked)
-			];
-
-			controlsVertBox->AddSlot()
-			.HAlign(HAlign_Center)
-			.AutoHeight()
-			[
-				horizonBox
-			];
-			controlsVertBox->AddSlot()
-			.HAlign(HAlign_Center)
-			.AutoHeight()
-			[
-				Statics::CreateButton<SPaperLevelMenu>(this, "New Symbol", &SPaperLevelMenu::OnRedoClicked)
-			];
-		}
-	}
-	
-	controlsVertBox->AddSlot()
-	.HAlign(HAlign_Center)
-	.AutoHeight()
-	[
-		Statics::CreateNewTitle("World Boundary")
-	];
-
-	{
-		auto horizonBox = SNew(SHorizontalBox);
-		horizonBox->AddSlot()
-		.HAlign(HAlign_Center)
-		.FillWidth(1)
-		[
-			Statics::CreateButton<SPaperLevelMenu>(this, "", &SPaperLevelMenu::OnEraserClicked)
-		];
-		horizonBox->AddSlot()
-		.HAlign(HAlign_Center)
-		.FillWidth(1)
-		[
-			Statics::CreateButton<SPaperLevelMenu>(this, "", &SPaperLevelMenu::OnUndoClicked)
-		];
-		horizonBox->AddSlot()
-		.HAlign(HAlign_Center)
-		.FillWidth(1)
-		[
-			Statics::CreateButton<SPaperLevelMenu>(this, "", &SPaperLevelMenu::OnRedoClicked)
-		];
-
-		controlsVertBox->AddSlot()
-		.HAlign(HAlign_Center)
-		.AutoHeight()
-		[
-			horizonBox
-		];
-		controlsVertBox->AddSlot()
-		.HAlign(HAlign_Center)
-		.AutoHeight()
-		[
-			Statics::CreateButton<SPaperLevelMenu>(this, "Apply", &SPaperLevelMenu::OnRedoClicked)
-		];
-	}
-	
-	controlsVertBox->AddSlot()
-	.HAlign(HAlign_Center)
-	.AutoHeight()
-	[
-		Statics::CreateNewTitle("General")
-	];
-
-	{
-		auto horizonBox = SNew(SHorizontalBox);
-		horizonBox->AddSlot()
-		.HAlign(HAlign_Center)
-		.FillWidth(1)
-		[
-			Statics::CreateButton<SPaperLevelMenu>(this, "Advanced", &SPaperLevelMenu::OnEraserClicked)
-		];
-		horizonBox->AddSlot()
-		.HAlign(HAlign_Center)
-		.FillWidth(1)
-		[
-			Statics::CreateButton<SPaperLevelMenu>(this, "Create", &SPaperLevelMenu::OnUndoClicked)
-		];
-		
-		controlsVertBox->AddSlot()
-		.HAlign(HAlign_Center)
-		.AutoHeight()
-		[
-			Statics::CreateInputField<SPaperLevelMenu>(this, "Map Title...", &SPaperLevelMenu::OnMapNameChanged)
-		];
-		controlsVertBox->AddSlot()
-		.HAlign(HAlign_Center)
-		.AutoHeight()
-		[
-			horizonBox
-		];
-	}
-	
 	// Add Controls To Grid Splitter (next to map)
 	gridAndControlsSplitter->AddSlot()
 	.AutoWidth()
-	.Padding(10.0f, 0)
+	.Padding(10.0f, 10.0f)
 	.HAlign(HAlign_Right)
 	.VAlign(VAlign_Center)
 	[
-		controlsVertBox
+		CreateControlsVertBox()
 	];
 
 	// Add gridAndControlsSplitter To Grand Vert Box
@@ -271,17 +111,17 @@ TSharedRef<SBorder> SPaperLevelMenu::InitPaperLevelMenuContents()
 	[
 		gridAndControlsSplitter
 	];
-
+	
 	// Add Grand Vert Box To Grand Border
 	return SNew(SBorder)
-			.Padding(1)
-			.BorderImage(FAppStyle::Get().GetBrush("DetailsView.CategoryMiddle"))
-			.BorderBackgroundColor(Statics::GetInnerBackgroundColor())
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Top)
-			[
-				outerVertBox
-			];
+		.Padding(10.0f)
+		.BorderImage(FAppStyle::Get().GetBrush("DetailsView.CategoryMiddle"))
+		.BorderBackgroundColor(Statics::GetInnerBackgroundColor())
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		[
+			outerVertBox
+		];
 }
 
 void SPaperLevelMenu::HandleTexturePainting()
@@ -302,23 +142,18 @@ void SPaperLevelMenu::HandleTexturePainting()
 				{
 					if (FMath::RoundToInt(localMousePosition.Y) >= 0 && FMath::RoundToInt(localMousePosition.Y) < 500)
 					{
-						int32 index = FMath::RoundToInt(localMousePosition.Y) * 500 + FMath::RoundToInt(localMousePosition.X);
-
-						mipData[index].A = 1;
-						mipData[index].G = 0;
-						mipData[index].B = 0;
-						mipData[index].R = 0;
+						EditTexel(
+							{FMath::RoundToInt(localMousePosition.X),FMath::RoundToInt(localMousePosition.Y)},
+							mipData,
+							{1,0,0,0},
+							TEXTUREACTION::UPDATE,
+							3);
 					}
 				}
-
-				MapImageTexture->GetPlatformData()->Mips[0].BulkData.Unlock();
-
-				// Set the modified data to the texture
-				MapImageTexture->UpdateResource();
-				
-				MapImageBrush->SetResourceObject(MapImageTexture);
 				
 				UE_LOG(LogTemp, Warning, TEXT("Texture Colour Updated") );
+
+				UnlockMipsBulkData_Safe();
 			}
 		}
 	}
@@ -343,14 +178,14 @@ TSharedRef<SBorder> SPaperLevelMenu::CreateMapImage()
 	
 	// wrap image in a border
 	return SNew(SBorder)
-	.Padding(1)
-	.BorderImage(FAppStyle::Get().GetBrush("DetailsView.CategoryMiddle"))
-	.BorderBackgroundColor(Statics::GetInnerBackgroundColor())
-	.HAlign(HAlign_Center)
-	.VAlign(VAlign_Center)
-	[
-		MapImageToPaint->AsShared()
-	];
+		.Padding(10)
+		.BorderImage(FAppStyle::Get().GetBrush("DetailsView.CategoryMiddle"))
+		.BorderBackgroundColor(Statics::GetInnerBackgroundColor())
+		.HAlign(HAlign_Center)
+		.VAlign(VAlign_Center)
+		[
+			MapImageToPaint->AsShared()
+		];
 }
 
 void SPaperLevelMenu::CreatePaperMapGrid()
@@ -384,16 +219,27 @@ void SPaperLevelMenu::OnMapNameChanged(const FText& _newText)
 	ToBeMapName = _newText.ToString();
 }
 
+void SPaperLevelMenu::OnClearClicked()
+{
+	//LastAction = &SPaperLevelMenu::OnClearClicked;
+	auto mipData = static_cast<RGBA*>(MapImageTexture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
+	EditTexel({250, 250}, mipData, {1,1,1,1}, TEXTUREACTION::UPDATE, 250);
+	UnlockMipsBulkData_Safe();
+}
+
 void SPaperLevelMenu::OnEraserClicked()
 {
+	//LastAction = &SPaperLevelMenu::OnEraserClicked;
 }
 
 void SPaperLevelMenu::OnUndoClicked()
 {
+	//LastAction();
 }
 
 void SPaperLevelMenu::OnRedoClicked()
 {
+	//LastAction = &SPaperLevelMenu::OnRedoClicked;
 }
 
 FSlateImageBrush* SPaperLevelMenu::CreateImageBrushFromStyleSet(FName ImageName, const FVector2D& ImageSize,
@@ -420,27 +266,18 @@ FSlateImageBrush* SPaperLevelMenu::CreateImageBrushFromStyleSet(FName ImageName,
 	FVector2D imageSize(500.0f, 500.0f);
 	MapImageBrush = new FSlateImageBrush(MapImageTexture, ImageSize);
 
-	// Set the teexture to white
+	// Set the texture to white
 	auto mipData = static_cast<RGBA*>(MapImageTexture->GetPlatformData()->Mips[0].BulkData.Lock(LOCK_READ_WRITE));
-	for(unsigned y = 0; y < 500; y++)
+	for(int y = 0; y < 500; y++)
 	{
-		for(unsigned x = 0; x < 500; x++)
+		for(int x = 0; x < 500; x++)
 		{
-			int32 index = y * 500 + x;
-
-			mipData[index].A = 1;
-			mipData[index].G = 1;
-			mipData[index].B = 1;
-			mipData[index].R = 1;
+			if (y == 499 && x == 499)
+				EditTexel({x,y}, mipData, {1,1,1,1}, TEXTUREACTION::UPDATE);
+			else
+				EditTexel({x,y}, mipData, {1,1,1,1});
 		}
 	}
-	
-	MapImageTexture->GetPlatformData()->Mips[0].BulkData.Unlock();
-
-	// Set the modified data to the texture
-	MapImageTexture->UpdateResource();
-				
-	MapImageBrush->SetResourceObject(MapImageTexture);
 
 	// return image brush
 	return new FSlateImageBrush(
@@ -473,6 +310,250 @@ FReply SPaperLevelMenu::OnImageMouseButtonUp(const FGeometry& MyGeometry, const 
 	
 	
 	return FReply::Unhandled();
+}
+
+void SPaperLevelMenu::EditTexel(FIntVector2 _texel, RGBA* _mipData, RGBA _newColor, TEXTUREACTION _postUpdateAction, int _radius)
+{
+	int32 index{};
+	for(int32 i = FMath::Clamp<int32>(_texel.Y - _radius, 0, 500); i < FMath::Clamp<int32>(_texel.Y + _radius, 0, 500); i++)
+	{
+		for(int32 j = FMath::Clamp<int32>(_texel.X - _radius, 0, 500);j < FMath::Clamp<int32>(_texel.X + _radius, 0, 500); j++)
+		{
+			index = i * 500 + j;
+
+			UE_LOG(LogTemp, Warning, TEXT("Index Clicked: %s"), *FString::FromInt(index) );
+			
+			_mipData[index].A = _newColor.A;
+			_mipData[index].G = _newColor.G;
+			_mipData[index].B = _newColor.B;
+			_mipData[index].R = _newColor.R;
+		}
+	}
+	
+	switch (_postUpdateAction)
+	{
+	case TEXTUREACTION::UPDATE:
+		{
+			MapImageTexture->GetPlatformData()->Mips[0].BulkData.Unlock();
+
+			// Set the modified data to the texture
+			MapImageTexture->UpdateResource();
+				
+			MapImageBrush->SetResourceObject(MapImageTexture);
+			
+			break;
+		}
+	default:
+		break;
+	}
+}
+
+void SPaperLevelMenu::UnlockMipsBulkData_Safe()
+{
+	if (MapImageTexture->GetPlatformData()->Mips[0].BulkData.IsLocked())
+	{
+		MapImageTexture->GetPlatformData()->Mips[0].BulkData.Unlock();
+	}
+}
+
+TSharedRef<SVerticalBox> SPaperLevelMenu::CreateControlsVertBox()
+{
+	auto controlsVertBox = SNew(SVerticalBox);
+	{
+		controlsVertBox->AddSlot()
+		.HAlign(HAlign_Center)
+		.AutoHeight()
+		[
+			Statics::WrapWidgetInBorder(CreateSymblsVertBox())
+		];
+		
+		controlsVertBox->AddSlot()
+		.HAlign(HAlign_Center)
+		.AutoHeight()
+		[
+			Statics::WrapWidgetInBorder(CreateWrldBndsVertBox())
+		];
+
+		controlsVertBox->AddSlot()
+		.HAlign(HAlign_Center)
+		.AutoHeight()
+		[
+			Statics::WrapWidgetInBorder(CreateGnrlVertBox())
+		];
+	}
+
+	return controlsVertBox;
+}
+
+TSharedRef<SVerticalBox> SPaperLevelMenu::CreateSymblsVertBox()
+{
+	auto symblsVertBox = SNew(SVerticalBox);
+	{
+		// Create all the buttons
+		CreateSymbolsGrid();
+
+		// Add Symbol Constols Title
+		symblsVertBox->AddSlot()
+		.HAlign(HAlign_Center)
+		.AutoHeight()
+		[
+			Statics::CreateNewTitle("Objects")
+		];
+	
+		for(unsigned y = 0; y < 6; y++ )
+		{
+			auto horizonBox = SNew(SHorizontalBox);
+			for(unsigned x = 0; x < 6; x++ )
+			{
+				horizonBox->AddSlot()
+				.HAlign(HAlign_Center)
+				.AutoWidth()
+				[
+					SymbolsGrid[{x,y}]
+				];
+			}
+		
+			symblsVertBox->AddSlot()
+			.HAlign(HAlign_Center)
+			.AutoHeight()
+			[
+				horizonBox
+			];
+		}
+
+		{
+			auto horizonBox = SNew(SHorizontalBox);
+			horizonBox->AddSlot()
+			.HAlign(HAlign_Center)
+			.FillWidth(1)
+			[
+				Statics::CreateButton<SPaperLevelMenu>(this, "Eraser", &SPaperLevelMenu::OnEraserClicked)
+			];
+			horizonBox->AddSlot()
+			.HAlign(HAlign_Center)
+			.FillWidth(1)
+			[
+				Statics::CreateButton<SPaperLevelMenu>(this, "Undo", &SPaperLevelMenu::OnUndoClicked)
+			];
+			horizonBox->AddSlot()
+			.HAlign(HAlign_Center)
+			.FillWidth(1)
+			[
+				Statics::CreateButton<SPaperLevelMenu>(this, "Redo", &SPaperLevelMenu::OnRedoClicked)
+			];
+			horizonBox->AddSlot()
+			.HAlign(HAlign_Center)
+			.FillWidth(1)
+			[
+				Statics::CreateButton<SPaperLevelMenu>(this, "Clear", &SPaperLevelMenu::OnClearClicked)
+			];
+
+			symblsVertBox->AddSlot()
+			.HAlign(HAlign_Center)
+			.AutoHeight()
+			[
+				horizonBox
+			];
+			symblsVertBox->AddSlot()
+			.HAlign(HAlign_Center)
+			.AutoHeight()
+			[
+				Statics::CreateButton<SPaperLevelMenu>(this, "New Symbol", &SPaperLevelMenu::OnRedoClicked)
+			];
+		}
+	}
+
+	return symblsVertBox;
+}
+
+TSharedRef<SVerticalBox> SPaperLevelMenu::CreateWrldBndsVertBox()
+{
+	auto WorldBoundVertBox = SNew(SVerticalBox);
+	{
+		WorldBoundVertBox->AddSlot()
+		.HAlign(HAlign_Center)
+		.AutoHeight()
+		[
+			Statics::CreateNewTitle("World Boundary")
+		];
+		
+		auto horizonBox = SNew(SHorizontalBox);
+		horizonBox->AddSlot()
+		.HAlign(HAlign_Center)
+		.FillWidth(1)
+		[
+			Statics::CreateButton<SPaperLevelMenu>(this, "", &SPaperLevelMenu::OnEraserClicked)
+		];
+		horizonBox->AddSlot()
+		.HAlign(HAlign_Center)
+		.FillWidth(1)
+		[
+			Statics::CreateButton<SPaperLevelMenu>(this, "", &SPaperLevelMenu::OnUndoClicked)
+		];
+		horizonBox->AddSlot()
+		.HAlign(HAlign_Center)
+		.FillWidth(1)
+		[
+			Statics::CreateButton<SPaperLevelMenu>(this, "", &SPaperLevelMenu::OnRedoClicked)
+		];
+	
+		WorldBoundVertBox->AddSlot()
+		.HAlign(HAlign_Center)
+		.AutoHeight()
+		[
+			horizonBox
+		];
+		WorldBoundVertBox->AddSlot()
+		.HAlign(HAlign_Center)
+		.AutoHeight()
+		[
+			Statics::CreateButton<SPaperLevelMenu>(this, "Apply", &SPaperLevelMenu::OnRedoClicked)
+		];
+	}
+
+	return WorldBoundVertBox;
+}
+
+TSharedRef<SVerticalBox> SPaperLevelMenu::CreateGnrlVertBox()
+{
+	auto GeneralBoundVertBox = SNew(SVerticalBox);
+	{
+		GeneralBoundVertBox->AddSlot()
+		.HAlign(HAlign_Center)
+		.AutoHeight()
+		[
+			Statics::CreateNewTitle("General")
+		];
+		
+		auto horizonBox = SNew(SHorizontalBox);
+		horizonBox->AddSlot()
+		.HAlign(HAlign_Center)
+		.FillWidth(1)
+		[
+			Statics::CreateButton<SPaperLevelMenu>(this, "Advanced", &SPaperLevelMenu::OnEraserClicked)
+		];
+		horizonBox->AddSlot()
+		.HAlign(HAlign_Center)
+		.FillWidth(1)
+		[
+			Statics::CreateButton<SPaperLevelMenu>(this, "Create", &SPaperLevelMenu::OnUndoClicked)
+		];
+			
+		GeneralBoundVertBox->AddSlot()
+		.HAlign(HAlign_Center)
+		.AutoHeight()
+		[
+			Statics::CreateInputField<SPaperLevelMenu>(this, "Map Title...", &SPaperLevelMenu::OnMapNameChanged)
+		];
+		GeneralBoundVertBox->AddSlot()
+		.HAlign(HAlign_Center)
+		.AutoHeight()
+		[
+			horizonBox
+		];
+	}
+
+	return GeneralBoundVertBox;
 }
 
 END_SLATE_FUNCTION_BUILD_OPTIMIZATION

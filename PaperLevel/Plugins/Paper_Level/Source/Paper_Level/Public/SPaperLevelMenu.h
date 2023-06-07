@@ -4,12 +4,29 @@
 
 #include "CoreMinimal.h"
 #include "Widgets/SCompoundWidget.h"
+#include "functional"
 
-/**
- * 
- */
+
+
+enum class TEXTUREACTION
+{
+	NON,
+	UPDATE
+};
+
+struct RGBA
+{
+	FFloat32 A{};
+	FFloat32 G{};
+	FFloat32 B{};
+	FFloat32 R{};
+};
+
+
+
 class PAPER_LEVEL_API SPaperLevelMenu : public SCompoundWidget
 {
+	
 public:
 	SLATE_BEGIN_ARGS(SPaperLevelMenu)
 	{}
@@ -36,6 +53,7 @@ public:
 	void OnButtonClicked();
 	void OnMapNameChanged(const FText&);
 
+	void OnClearClicked();
 	void OnEraserClicked();
 	void OnUndoClicked();
 	void OnRedoClicked();
@@ -44,17 +62,17 @@ public:
 
 	FReply OnImageMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent);;
 	FReply OnImageMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent);;
-	
+
+	void EditTexel(FIntVector2 _texel, RGBA* _mipData, RGBA _newColor, TEXTUREACTION _postUpdateAction = TEXTUREACTION::NON, int _radius = 1);
+
+	void UnlockMipsBulkData_Safe();
+
+	TSharedRef<SVerticalBox> CreateControlsVertBox();
+	TSharedRef<SVerticalBox> CreateSymblsVertBox();
+	TSharedRef<SVerticalBox> CreateWrldBndsVertBox();
+	TSharedRef<SVerticalBox> CreateGnrlVertBox();
 	
 private:
-	struct RGBA
-	{
-		FFloat32 A{};
-		FFloat32 G{};
-		FFloat32 B{};
-		FFloat32 R{};
-	};
-	
 	FString ToBeMapName{"Default Map Name"};
 	
 	bool IsTrackingMousePos{};
@@ -69,3 +87,5 @@ private:
 	TMap<FUintVector2, TSharedRef<SBorder>> WorldGrid{};
 	TMap<FUintVector2, TSharedRef<SBorder>> SymbolsGrid{};
 };
+
+
