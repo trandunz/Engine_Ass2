@@ -11,35 +11,6 @@
 #include "SPluginDesignerMenu.h"
 #include "Statics.h"
 
-#include "DesktopPlatformModule.h"
-#include "IDesktopPlatform.h"
-#include "PluginUtils.h"
-#include "SlateOptMacros.h"
-#include "SourceCodeNavigation.h"
-#include "BehaviorTree/BlackboardComponent.h"
-#include "Components/SkeletalMeshComponent.h"
-#include "GameFramework/Character.h"
-#include "PluginBrowser/Private/PluginBrowserModule.h"
-#include "Framework/Notifications/NotificationManager.h"
-#include "Widgets/Notifications/SNotificationList.h"
-#include "Misc/Paths.h"
-#include "HAL/PlatformFileManager.h"
-#include "Misc/MessageDialog.h"
-#include "HAL/FileManager.h"
-#include "Interfaces/IMainFrameModule.h"
-#include "PluginBrowser/Private/SFilePathBlock.h"
-#include "SlateFwd.h"
-#include "Input/Reply.h"
-#include "Brushes/SlateDynamicImageBrush.h"
-#include "Widgets/DeclarativeSyntaxSupport.h"
-#include "IPluginWizardDefinition.h"
-#include "PluginBrowser/Private/NewPluginDescriptorData.h"
-#include "Slate/Public/Framework/Application/SlateApplication.h"
-#include "ModuleDescriptor.h"
-#include "Animation/AnimBlueprint.h"
-#include "Widgets/Layout/SScrollBorder.h"
-
-
 BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
 
 // Initialize our static variables
@@ -405,7 +376,7 @@ FString SPluginDesignerMenu::GetMeshPath()
 {
 	if (MeshAssetData.IsValid())
 	{
-		return MeshAssetData.ObjectPath.ToString();
+		return MeshAssetData.GetSoftObjectPath().ToString();
 	}
 	return "";
 }
@@ -419,7 +390,7 @@ FString SPluginDesignerMenu::AnimBPPath()
 {
 	if (AnimationBPData.IsValid())
 	{
-		return AnimationBPData.ObjectPath.ToString();
+		return AnimationBPData.GetSoftObjectPath().ToString();
 	}
 	return "";
 }

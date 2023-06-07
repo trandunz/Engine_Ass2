@@ -79,17 +79,6 @@ void FPaper_LevelModule::RegisterMenus()
 			Section.AddMenuEntryWithCommandList(FPaper_LevelCommands::Get().OpenPluginWindow, PluginCommands);
 		}
 	}
-
-	{
-		UToolMenu* ToolbarMenu = UToolMenus::Get()->ExtendMenu("LevelEditor.LevelEditorToolBar");
-		{
-			FToolMenuSection& Section = ToolbarMenu->FindOrAddSection("Settings");
-			{
-				FToolMenuEntry& Entry = Section.AddEntry(FToolMenuEntry::InitToolBarButton(FPaper_LevelCommands::Get().OpenPluginWindow));
-				Entry.SetCommandList(PluginCommands);
-			}
-		}
-	}
 }
 
 #undef LOCTEXT_NAMESPACE

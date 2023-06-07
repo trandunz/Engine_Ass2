@@ -40,8 +40,8 @@ TSharedRef< FSlateStyleSet > FPaper_LevelStyle::Create()
 {
 	TSharedRef< FSlateStyleSet > Style = MakeShareable(new FSlateStyleSet("Paper_LevelStyle"));
 	Style->SetContentRoot(IPluginManager::Get().FindPlugin("Paper_Level")->GetBaseDir() / TEXT("Resources"));
-	
-	Style->Set("Paper_Level.OpenPluginWindow", new IMAGE_BRUSH(TEXT("PaperLevel"), Icon20x20));
+	Style->Set("Paper_Level.PluginAction", new IMAGE_BRUSH(TEXT("Icon128"), Icon20x20));
+	Style->Set("Paper_Level.OpenPluginWindow", new IMAGE_BRUSH(TEXT("Icon128"), Icon20x20));
 	
 	return Style;
 }

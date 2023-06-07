@@ -72,10 +72,38 @@
 #include "Math/Transform.h"
 #include "UObject/ConstructorHelpers.h"
 #include "PropertyEditorModule.h"
+#include "Brushes/SlateImageBrush.h"
 #include "Editor/PropertyEditor/Private/UserInterface/PropertyEditor/PropertyEditorConstants.h"
 #include "Widgets/Layout/SScrollBox.h"
 #include "Framework/Notifications/NotificationManager.h"
 #include "Widgets/Notifications/SNotificationList.h"
+#include "PluginUtils.h"
+#include "SlateOptMacros.h"
+#include "SourceCodeNavigation.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/Character.h"
+#include "PluginBrowser/Private/PluginBrowserModule.h"
+#include "Framework/Notifications/NotificationManager.h"
+#include "Widgets/Notifications/SNotificationList.h"
+#include "Misc/Paths.h"
+#include "HAL/PlatformFileManager.h"
+#include "Misc/MessageDialog.h"
+#include "HAL/FileManager.h"
+#include "Interfaces/IMainFrameModule.h"
+#include "PluginBrowser/Private/SFilePathBlock.h"
+#include "SlateFwd.h"
+#include "Input/Reply.h"
+#include "Brushes/SlateDynamicImageBrush.h"
+#include "Widgets/DeclarativeSyntaxSupport.h"
+#include "IPluginWizardDefinition.h"
+#include "PluginBrowser/Private/NewPluginDescriptorData.h"
+#include "Slate/Public/Framework/Application/SlateApplication.h"
+#include "ModuleDescriptor.h"
+#include "Animation/AnimBlueprint.h"
+#include "Widgets/Layout/SScrollBorder.h"
+#include "Engine/Texture2D.h"
+#include "Engine/TextureDefines.h"
 
 class SLATEDESIGNER_API Statics : public SCompoundWidget
 {
@@ -179,9 +207,21 @@ public:
 	 * @tparam T 
 	 * @param _this 
 	 * @param _text 
-	 * @param _onPressed 
+	 * @param _onPressed
+	 * @param _texture 
 	 * @return 
 	 */
+	template<class T>
+	static TSharedRef<SBorder> CreateButton(T* _this, FString _text, TDelegate<void()>::TMethodPtr<T> _onPressed, UTexture2D* _texture);
+
+	/**
+ 	* @brief Returns a border containing a button
+ 	* @tparam T 
+ 	* @param _this 
+ 	* @param _text 
+ 	* @param _onPressed
+ 	* @return 
+ 	*/
 	template<class T>
 	static TSharedRef<SBorder> CreateButton(T* _this, FString _text, TDelegate<void()>::TMethodPtr<T> _onPressed);
 
@@ -486,7 +526,7 @@ inline TSharedRef<SBorder> Statics::CreateVectorInputField(T* _this, FString _na
 			];
 }
 
-template <typename T>
+template <class T>
 inline TSharedRef<SBorder> Statics::CreateButton(T* _this, FString _text, TDelegate<void()>::TMethodPtr<T> _onPressed)
 {
 	return SNew(SBorder)
@@ -508,9 +548,45 @@ inline TSharedRef<SBorder> Statics::CreateButton(T* _this, FString _text, TDeleg
 				.HAlign(HAlign_Center)
 				.VAlign(VAlign_Center)
 				[
-					SNew(SButton)
+				SNew(SButton)
+				.Text(FText::FromString(_text))
+				.OnPressed(_this, _onPressed)
+				]
+				]
+			];
+}
+
+template <typename T>
+inline TSharedRef<SBorder> Statics::CreateButton(T* _this, FString _text, TDelegate<void()>::TMethodPtr<T> _onPressed, UTexture2D* _texture)
+{
+	auto button = SNew(SButton)
 					.Text(FText::FromString(_text))
-					.OnPressed(_this, _onPressed)
+					.OnPressed(_this, _onPressed);
+
+	button.Get().SetContent(
+			SNew(SImage)
+			.Image(new FSlateImageBrush(Cast<UTexture2D>(_texture), UE::Slate::FDeprecateVector2DParameter{50.0, 50.0})));
+	
+	return SNew(SBorder)
+			.Padding(1)
+			.BorderImage(FAppStyle::Get().GetBrush("DetailsView.CategoryMiddle"))
+			.BorderBackgroundColor(FLinearColor(0,0,0))
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Top)
+			[
+				SNew(SBorder)
+			.Padding(5)
+			.BorderImage(FAppStyle::Get().GetBrush("DetailsView.CategoryMiddle"))
+			.BorderBackgroundColor(GetInnerBackgroundColor())
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Top)
+			[
+				SNew(SHorizontalBox)
+				+SHorizontalBox::Slot()
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					button
 				]
 				]
 			];

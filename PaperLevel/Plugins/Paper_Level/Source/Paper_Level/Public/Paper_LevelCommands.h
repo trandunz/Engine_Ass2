@@ -11,7 +11,7 @@ class FPaper_LevelCommands : public TCommands<FPaper_LevelCommands>
 public:
 
 	FPaper_LevelCommands()
-		: TCommands<FPaper_LevelCommands>(TEXT("Paper_Level"), NSLOCTEXT("Contexts", "Paper_Level", "Paper_Level Plugin"), NAME_None, FPaper_LevelStyle::GetStyleSetName())
+		: TCommands<FPaper_LevelCommands>(TEXT("Paper Level"), NSLOCTEXT("Contexts", "Paper Level", "Paper Level"), NAME_None, FPaper_LevelStyle::GetStyleSetName())
 	{
 	}
 

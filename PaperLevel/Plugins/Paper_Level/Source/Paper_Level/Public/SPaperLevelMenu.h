@@ -4,9 +4,6 @@
 
 #include "CoreMinimal.h"
 #include "Widgets/SCompoundWidget.h"
-#include "functional"
-
-
 
 enum class TEXTUREACTION
 {
@@ -22,8 +19,6 @@ struct RGBA
 	FFloat32 R{};
 };
 
-
-
 class PAPER_LEVEL_API SPaperLevelMenu : public SCompoundWidget
 {
 	
@@ -32,14 +27,10 @@ public:
 	{}
 	SLATE_END_ARGS()
 
-	/** Constructs this widget with InArgs */
 	void Construct(const FArguments& InArgs);
 
 	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
-
-	/**
- 	* @brief Create The Slate Designer Menu
- 	*/
+	
 	void InitPaperLevelMenu();
 
 	TSharedRef<SBorder> InitPaperLevelMenuContents();
@@ -53,6 +44,10 @@ public:
 	void OnButtonClicked();
 	void OnMapNameChanged(const FText&);
 
+	void OnSpawnSymbolClicked();
+	void OnSellBinSymbolClicked();
+	void OnGrowPlotSymbolClicked();
+
 	void OnClearClicked();
 	void OnEraserClicked();
 	void OnUndoClicked();
@@ -63,14 +58,19 @@ public:
 	FReply OnImageMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent);;
 	FReply OnImageMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent);;
 
-	void EditTexel(FIntVector2 _texel, RGBA* _mipData, RGBA _newColor, TEXTUREACTION _postUpdateAction = TEXTUREACTION::NON, int _radius = 1);
+	void EditTexel(UTexture2D* _texture, FIntVector2 _texel, RGBA* _mipData, RGBA _newColor, TEXTUREACTION _postUpdateAction = TEXTUREACTION::NON, int _radius = 1);
 
-	void UnlockMipsBulkData_Safe();
+	void UnlockMipsBulkData_Safe(UTexture2D* _texture);
 
 	TSharedRef<SVerticalBox> CreateControlsVertBox();
 	TSharedRef<SVerticalBox> CreateSymblsVertBox();
 	TSharedRef<SVerticalBox> CreateWrldBndsVertBox();
 	TSharedRef<SVerticalBox> CreateGnrlVertBox();
+
+	void CreateSymbolsTextures();
+	
+	void ImprintCurrentMapOntoCopy();
+	void ImprintCopyMapOntoCurrent();
 	
 private:
 	FString ToBeMapName{"Default Map Name"};
@@ -81,6 +81,8 @@ private:
 	SImage* MapImageToPaint{};
 	struct FSlateImageBrush* MapImageBrush{};
 	UTexture2D* MapImageTexture{};
+	UTexture2D* LastMapImageTexture{};
+	TArray<UTexture2D*> SymbolTextures{};
 	uint8* ImageTextureData{};
 	
 	SVerticalBox* ParentBox{nullptr};

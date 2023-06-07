@@ -13,6 +13,8 @@
 #include "Widgets/SCompoundWidget.h"
 #include "AssetRegistry/AssetData.h"
 
+class UTexture2D;
+
 class SLATEDESIGNER_API SPluginDesignerMenu : public SCompoundWidget
 {
 public:
