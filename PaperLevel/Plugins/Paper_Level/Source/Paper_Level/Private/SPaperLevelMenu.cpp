@@ -19,9 +19,34 @@
 #include "Engine/TextureDefines.h"
 #include "IImageWrapperModule.h"
 #include "IImageWrapper.h"
+#include "PackageTools.h"
 #include "Engine/Texture2D.h"
 #include "Misc/FileHelper.h"
 #include "Modules/ModuleManager.h"
+#include "Engine/World.h"
+#include "AssetRegistryModule.h"
+#include "AssetToolsModule.h"
+#include "EditorAssetLibrary.h"
+#include "FileHelpers.h"
+#include "PackageTools.h"
+#include "Engine/Level.h"
+#include "GameFramework/WorldSettings.h"
+#include "UObject/ConstructorHelpers.h"
+#include "Engine/Level.h"
+#include "Engine/World.h"
+#include "Misc/PackageName.h"
+#include "Misc/FileHelper.h"
+#include "HAL/PlatformFilemanager.h"
+#include "Engine/LevelStreaming.h"
+#include "EngineUtils.h"
+#include "PackageTools.h"
+#include <iostream>
+#include <fstream>
+#include "Engine/AssetManager.h"
+#include "Engine/ObjectLibrary.h"
+#include "Containers/UnrealString.h"
+#include "Misc/OutputDeviceNull.h"
+
 
 BEGIN_SLATE_FUNCTION_BUILD_OPTIMIZATION
 
@@ -51,6 +76,9 @@ void SPaperLevelMenu::Construct(const FArguments& InArgs)
 	];
 	//
 	//
+
+	
+	CustomErrorDevice = new FCustomOutputDeviceError{};
 }
 
 void SPaperLevelMenu::Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime)
@@ -149,12 +177,11 @@ void SPaperLevelMenu::HandleTexturePainting()
 							{1,0,0,0},
 							TEXTUREACTION::UPDATE,
 							3);
+						UnlockMipsBulkData_Safe(MapImageTexture);
+
+						///UE_LOG(LogTemp, Warning, TEXT("Texture Colour Updated") );
 					}
 				}
-				
-				///UE_LOG(LogTemp, Warning, TEXT("Texture Colour Updated") );
-
-				UnlockMipsBulkData_Safe(MapImageTexture);
 			}
 		}
 	}
@@ -262,6 +289,11 @@ void SPaperLevelMenu::OnSellBinSymbolClicked()
 
 void SPaperLevelMenu::OnGrowPlotSymbolClicked()
 {
+}
+
+void SPaperLevelMenu::OnCreateLevelClicked()
+{
+	CreateAndAddLevelAsset();
 }
 
 void SPaperLevelMenu::OnClearClicked()
@@ -607,7 +639,7 @@ TSharedRef<SVerticalBox> SPaperLevelMenu::CreateGnrlVertBox()
 		.HAlign(HAlign_Center)
 		.FillWidth(1)
 		[
-			Statics::CreateButton<SPaperLevelMenu>(this, "Create", &SPaperLevelMenu::OnUndoClicked)
+			Statics::CreateButton<SPaperLevelMenu>(this, "Create", &SPaperLevelMenu::OnCreateLevelClicked)
 		];
 			
 		GeneralBoundVertBox->AddSlot()
@@ -770,6 +802,346 @@ void SPaperLevelMenu::ImprintCopyMapOntoCurrent()
 		MapImageBrush->SetResourceObject(MapImageTexture);
 	}
 	UE_LOG(LogTemp, Warning, TEXT("Imprint Copy Map Onto Current") );
+}
+
+void SPaperLevelMenu::CreateAndAddLevelAsset()
+{
+	/*auto LevelAsset = NewObject<ULevel>(GetTransientPackage(), ULevel::StaticClass());
+
+	if (LevelAsset && !LevelAsset->HasAnyFlags(RF_ClassDefaultObject | RF_Transient))
+	{
+		// Rename the level asset
+		LevelAsset->Rename(*ToBeMapName, nullptr, REN_None);
+
+		// Set the RF_Standalone flag on the level asset
+		LevelAsset->SetFlags(RF_Standalone);
+
+		// Add the asset to the Content Browser
+		UPackage* Package = LevelAsset->GetOutermost();
+		FString PackageName = Package->GetName();
+
+		FString ProjectPath = FPaths::ProjectDir();
+		FString NewPackageName = ProjectPath / "Content" / ToBeMapName + ".umap";
+		FText ErrorMessage;
+
+		if (!FPackageName::DoesPackageExist(NewPackageName, nullptr, nullptr))
+		{
+			// Save the package with RF_Standalone flag
+			bool bSuccess = UPackage::SavePackage(
+				Package,
+				LevelAsset,
+				RF_Standalone | RF_Public,
+				*NewPackageName,
+				GError,
+				nullptr,
+				true,
+				SAVE_NoError
+			);
+
+			if (bSuccess)
+			{
+				// Refresh the Content Browser to reflect the new asset
+				FAssetRegistryModule::AssetCreated(LevelAsset);
+				LevelAsset->MarkPackageDirty();
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("Failed to save package: %s"), *NewPackageName);
+			}
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Package with name '%s' already exists."), *NewPackageName);
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid level asset."));
+	}
+
+	LevelAsset->ConditionalBeginDestroy();
+	LevelAsset = nullptr;*/
+
+	/*auto LevelAsset = NewObject<ULevel>(GetTransientPackage(), ULevel::StaticClass());
+
+	if (LevelAsset && !LevelAsset->HasAnyFlags(RF_ClassDefaultObject | RF_Transient))
+	{
+		LevelAsset->Rename(*ToBeMapName, nullptr, REN_None);
+
+		// Create a new world and assign the level
+		UWorld* World = NewObject<UWorld>(GetTransientPackage(), UWorld::StaticClass());
+		World->AddToRoot();
+		World->PersistentLevel = LevelAsset;
+
+		// Save the level as a .umap file
+		FString PackageName = FPackageName::GetLongPackagePath(FPaths::ProjectContentDir()) / (ToBeMapName + ".umap");
+		bool bSuccess = UPackage::SavePackage(
+			World->GetOutermost(),
+			World,
+			RF_Standalone | RF_Public,
+			*PackageName,
+			GError,
+			nullptr,
+			true,
+			SAVE_KeepGUID
+		);
+
+		if (bSuccess)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Level saved successfully: %s"), *PackageName);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to save level: %s"), *PackageName);
+		}
+
+		// Clean up the memory
+		LevelAsset->RemoveFromRoot();
+		LevelAsset->ConditionalBeginDestroy();
+		World->ConditionalBeginDestroy();
+		LevelAsset = nullptr;
+		World = nullptr;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid level asset."));
+	}*/
+
+	/*auto LevelAsset = NewObject<ULevel>(GetTransientPackage(), ULevel::StaticClass());
+
+	if (LevelAsset && !LevelAsset->HasAnyFlags(RF_ClassDefaultObject | RF_Transient))
+	{
+		LevelAsset->Rename(*ToBeMapName, nullptr, REN_None);
+
+		// Create a new world and assign the level
+		UWorld* World = NewObject<UWorld>(GetTransientPackage(), UWorld::StaticClass());
+		World->AddToRoot();
+		World->PersistentLevel = LevelAsset;
+		
+		// Get the persistent level's world settings
+		AWorldSettings* WorldSettings = new AWorldSettings(World);
+		if (!WorldSettings)
+		{
+			LevelAsset->SetWorldSettings(WorldSettings);
+		}
+
+		// Add the level asset to the world
+		World->AddLevel(LevelAsset);
+
+		// Get the target file path
+		FString PackageName = FPackageName::GetLongPackagePath(FPaths::ProjectContentDir()) / (ToBeMapName + ".umap");
+		FString TargetFilePath = FPaths::ConvertRelativePathToFull(PackageName);
+
+		// Save the level as a .umap file using the Editor Scripting Utilities
+		bool bSuccess = FEditorFileUtils::SaveMap(World, TargetFilePath);
+		if (bSuccess)
+		{
+			UE_LOG(LogTemp, Log, TEXT("Map saved successfully: %s"), *TargetFilePath);
+		}
+		else
+		{
+			UE_LOG(LogTemp, Error, TEXT("Failed to save map: %s"), *TargetFilePath);
+		}
+
+		// Clean up the memory
+		LevelAsset->RemoveFromRoot();
+		LevelAsset->ConditionalBeginDestroy();
+		World->ConditionalBeginDestroy();
+		LevelAsset = nullptr;
+		World = nullptr;
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Invalid level asset."));
+	}*/
+
+	// Create a new level from the existing world
+	/*UWorld* World = nullptr;
+	UEditorEngine* EditorEngine = Cast<UEditorEngine>(GEngine);
+	if (EditorEngine)
+	{
+		World = EditorEngine->GetEditorWorldContext().World();
+	}
+
+	if (World)
+	{
+		ULevel* NewLevel = NewObject<ULevel>(World->PersistentLevel->GetOutermost(), ULevel::StaticClass());
+		if (NewLevel)
+		{
+			NewLevel->OwningWorld = World;
+			World->AddLevel(NewLevel);
+
+			// Set the level name
+			NewLevel->Rename(*ToBeMapName, nullptr);
+
+			// Get the root path
+			FString RootPath = FPaths::ProjectContentDir();
+
+			// Create the full package name
+			FString PackageName = RootPath / "Content" / ToBeMapName / ".umap";
+
+			// Create the package for the level
+			UPackage* LevelPackage = NewLevel->GetOutermost();
+
+			// Save the level to disk
+			bool bSaved = UPackage::SavePackage(LevelPackage, NewLevel, RF_NoFlags, *PackageName, GError, nullptr, true, true, SAVE_NoError);
+
+			if (bSaved)
+			{
+				UE_LOG(LogTemp, Log, TEXT("Map saved successfully: %s"), *PackageName);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Error, TEXT("Failed to save map: %s"), *PackageName);
+			}
+		}
+
+		NewLevel->RemoveFromRoot();
+		NewLevel->ConditionalBeginDestroy();
+		World->ConditionalBeginDestroy();
+		NewLevel = nullptr;
+	}*/
+
+	/*UWorld* CustomWorld = NewObject<UWorld>();
+
+	// Create a new package
+	FString PackageName = TEXT("/Game/Maps/MyCustomLevel");
+	UPackage* LevelPackage = CreatePackage(nullptr, *PackageName);
+
+	// Create a new ULevel within the package
+	ULevel* CustomLevel = NewObject<ULevel>(LevelPackage, ULevel::StaticClass(), NAME_None, RF_Public | RF_Standalone);
+	
+	// Set the ULevel's package flags
+	LevelPackage->SetPackageFlags(PKG_NewlyCreated | PKG_CompiledIn | PKG_ContainsMap);
+
+	// Add the ULevel to the UWorld
+	CustomWorld->AddLevel(CustomLevel);
+
+	// Save the ULevel as a .umap file
+	FString LevelPath = FPackageName::LongPackageNameToFilename(PackageName, FPackageName::GetMapPackageExtension());
+	bool bSuccess = UPackage::SavePackage(LevelPackage, nullptr, EObjectFlags::RF_Public | EObjectFlags::RF_Standalone, *LevelPath, GError, nullptr, false, true, SAVE_NoError);
+
+	if (bSuccess)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("Level saved successfully!"));
+	}
+	else
+	{
+		UE_LOG(LogTemp, Error, TEXT("Failed to save the level!"));
+	}
+
+	CustomLevel->RemoveFromRoot();
+	CustomLevel->ConditionalBeginDestroy();
+	CustomWorld->ConditionalBeginDestroy();
+	CustomLevel = nullptr;
+	CustomWorld = nullptr;*/
+
+	DuplicateBlueprintAsset("SomeLevel", "Maps/");
+}
+
+void SPaperLevelMenu::DuplicateBlueprintAsset(const FString& SourceAssetPath, const FString& DestinationAssetPath)
+{
+	// Load the source asset
+	/*auto sourceFile  = (IPluginManager::Get().FindPlugin("Paper_Level")->GetBaseDir() / "Resources" / "SomeLevel.umap").GetCharArray();
+	FString PackageName = FPackageName::GetLongPackagePath(FPaths::ProjectContentDir()) / (ToBeMapName + ".umap");
+	FString TargetFilePath = FPaths::ConvertRelativePathToFull(PackageName);
+	FString conv = FString{sourceFile};
+	FString conv2 = FString{TargetFilePath};
+
+	// Step 1: Open the source file for reading and create a new file for writing
+	std::ifstream source(*conv, std::ios::binary);
+	std::ofstream duplicate(*conv2, std::ios::binary);
+
+	// Check if both files are successfully opened
+	if (!source.is_open()) {
+		std::cout << "Failed to open the source file." << std::endl;
+	}
+	if (!duplicate.is_open()) {
+		std::cout << "Failed to create the duplicate file." << std::endl;
+	}
+
+	// Step 2: Read the content from the source file
+	std::string content((std::istreambuf_iterator<char>(source)), std::istreambuf_iterator<char>());
+
+	// Step 3: Write the content to the new file
+	duplicate << content;
+
+	// Step 4: Close both files
+	source.close();
+	duplicate.close();
+
+	std::cout << "File duplicated successfully." << std::endl;*/
+
+	LoadAndRenameAsset("SomeLevel", "TestLevel");
+}
+
+void SPaperLevelMenu::LoadAndRenameAsset(const FString& SourceAssetPath, const FString& NewAssetName)
+{
+	IAssetRegistry& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry").Get();
+	FString PluginContentDir = IPluginManager::Get().FindPlugin("Paper_Level")->GetBaseDir();
+	FPaths::NormalizeDirectoryName(PluginContentDir);
+	PluginContentDir = FPaths::Combine(TEXT("/"), PluginContentDir);
+	AssetRegistry.AddPath(*PluginContentDir);
+	
+	FString SourceAssetFullPath = "/Game/SomeLevel";
+	FString DuplicateAssetShortPath = "/Game/TestLevel";
+
+	 // Step 3: Load the source asset
+	 UObject* SourceAsset = UAssetManager::GetStreamableManager().LoadSynchronous(SourceAssetFullPath);
+	 if (SourceAsset)
+	 {
+	 	UObject* DuplicateAsset = DuplicateObject(SourceAsset, nullptr, FName(ToBeMapName));
+	 	if (DuplicateAsset)
+	 	{
+	 		// Step 5: Save the duplicated asset package
+	 		FString PackageName = FPackageName::GetLongPackagePath(FPaths::ProjectContentDir()) + TEXT("/") + NewAssetName;
+	 		FString TargetFilePath = FPaths::ConvertRelativePathToFull(PackageName) + ".umap";
+	 		UPackage* DuplicateAssetPackage = CreatePackage(nullptr, *DuplicateAssetShortPath);
+	 		if (DuplicateAssetPackage)
+	 		{
+	 			// Set the outer of the duplicated asset to the new package
+	 			DuplicateAsset->Rename(nullptr, DuplicateAssetPackage);
+	 			
+	 			const bool bSuccess = UPackage::SavePackage(
+	 				DuplicateAssetPackage,
+	 				DuplicateAsset,
+	 				RF_Standalone,
+	 				*TargetFilePath,
+	 				CustomErrorDevice,
+	 				nullptr,
+	 				false,
+	 				true,
+	 				SAVE_AllowTimeout);
+	 			
+	 			if (bSuccess)
+	 			{
+	 				UE_LOG(LogTemp, Warning, TEXT("Asset Duplicated To: %s"), *TargetFilePath);
+	 			}
+	 			else
+	 			{
+	 				UE_LOG(LogTemp, Warning, TEXT("Package Failed To Save (Last Step!!): %s"), *TargetFilePath);
+	 			}
+	 			DuplicateAssetPackage->UnMark(EObjectMark::OBJECTMARK_Saved);
+	 			DuplicateAssetPackage->ConditionalBeginDestroy();
+	 			DuplicateAssetPackage = nullptr;
+	 		}
+	 		DuplicateAsset->UnMark(EObjectMark::OBJECTMARK_Saved);
+	 		DuplicateAsset->ConditionalBeginDestroy();
+	 		DuplicateAsset = nullptr;
+	 		SourceAsset->UnMark(EObjectMark::OBJECTMARK_Saved);
+	 		SourceAsset->ConditionalBeginDestroy();
+	 		SourceAsset = nullptr;
+	 		CustomErrorDevice->Flush();
+	 	}
+	 	else
+	 	{
+	 		UE_LOG(LogTemp, Warning, TEXT("Failed to duplicate asset: %s"), *SourceAssetFullPath);
+	 	}
+	 }
+	 else
+	 {
+	     UE_LOG(LogTemp, Warning, TEXT("Failed to load source asset: %s"), *SourceAssetFullPath);
+	 }
 }
 
 

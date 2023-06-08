@@ -44,7 +44,7 @@ public class Paper_Level : ModuleRules
 				"Slate",
 				"SlateCore", 
 				"SlateDesigner",
-				"RenderCore"
+				"RenderCore", "EditorScriptingUtilities"
 			}
 			);
 		

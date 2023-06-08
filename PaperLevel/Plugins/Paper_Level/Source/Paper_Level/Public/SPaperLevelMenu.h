@@ -19,6 +19,23 @@ struct RGBA
 	FFloat32 R{};
 };
 
+class FCustomOutputDeviceError : public FOutputDeviceError
+{
+public:
+	FString LastErrorMessage;
+
+	virtual void Serialize(const TCHAR* Msg, ELogVerbosity::Type Verbosity, const class FName& Category) override
+	{
+		LastErrorMessage = Msg;
+		UE_LOG(LogTemp, Warning, TEXT("GError: %s"), *LastErrorMessage);
+	}
+
+	virtual void HandleError() override
+	{
+		UE_LOG(LogTemp, Warning, TEXT("GError: %s"), *LastErrorMessage);
+	}
+};
+
 class PAPER_LEVEL_API SPaperLevelMenu : public SCompoundWidget
 {
 	
@@ -48,6 +65,7 @@ public:
 	void OnSellBinSymbolClicked();
 	void OnGrowPlotSymbolClicked();
 
+	void OnCreateLevelClicked();
 	void OnClearClicked();
 	void OnEraserClicked();
 	void OnUndoClicked();
@@ -71,9 +89,14 @@ public:
 	
 	void ImprintCurrentMapOntoCopy();
 	void ImprintCopyMapOntoCurrent();
-	
+
+	void CreateAndAddLevelAsset();
+	void DuplicateBlueprintAsset(const FString& SourceAssetPath, const FString& DestinationAssetPath);
+	void LoadAndRenameAsset(const FString& SourceAssetPath, const FString& NewAssetName);
 private:
-	FString ToBeMapName{"Default Map Name"};
+	FCustomOutputDeviceError* CustomErrorDevice;
+	
+	FString ToBeMapName{"TestLevel"};
 	
 	bool IsTrackingMousePos{};
 
