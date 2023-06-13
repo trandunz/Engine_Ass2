@@ -14,6 +14,7 @@
 #include "Widgets/SCompoundWidget.h"
 #include "Templates/SharedPointer.h"
 #include "AIController.h"
+#include "AssetToolsModule.h"
 #include "AssetViewWidgets.h"
 #include "SAssetView.h"
 #include "SlateOptMacros.h"
@@ -113,6 +114,11 @@ public:
 	SLATE_END_ARGS()
 	void Construct(const FArguments& InArgs);
 
+	static bool CloneBlueprint(UObject* SourceBlueprint, const FString NewBlueprintName, const FString NewBlueprintPath);
+	static FReply CreateObject(const FString NewBlueprintPath, const FString NewBlueprintName);
+	static bool DoesPathContainValidObject(const FString& ObjectPath);
+
+	
 	/**
 	 * @brief Returns a border containing a textblock set up for a title
 	 * @param _title 
@@ -249,6 +255,128 @@ public:
 
 inline void Statics::Construct(const FArguments& InArgs)
 {
+}
+
+inline bool Statics::CloneBlueprint(UObject* _sourceBlueprint, const FString _newBlueprintName, const FString _newBlueprintPath)
+{
+	//
+	// Get Asset Tools and Create Asset
+	
+	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
+	//
+	// Run duplication
+
+	auto DuplicatedBlueprint = (AssetTools.DuplicateAsset
+		(_newBlueprintName, _newBlueprintPath, _sourceBlueprint));
+
+	if (DuplicatedBlueprint)
+		DuplicatedBlueprint->RemoveFromRoot();
+	if (_sourceBlueprint)
+		_sourceBlueprint->RemoveFromRoot();
+	
+	//
+	//	Validity check
+	if (!DuplicatedBlueprint)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CloneBlueprint: Failed! new blueprint is NULL"));
+		return false;
+	}
+	
+	UE_LOG(LogTemp, Warning, TEXT("CloneBlueprint: Success! Blueprint made."));
+	
+	return true;
+}
+
+inline FReply Statics::CreateObject(const FString _sourceBlueprintPath, const FString _newBlueprintName)
+{
+	//
+	// Check if there is a valid folder
+
+	//	- must use /Game/ or else we get an invalid source...
+	const FString DesiredFolder = "/Game/";
+
+	//
+	// Get the source blueprint
+
+	auto SourceObject = LoadObject<UObject>(nullptr, *_sourceBlueprintPath);
+	if (!SourceObject)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CreateObject: Failure! Invalid source object!"));
+		return FReply::Unhandled();
+	}
+
+	//
+	// Duplicate the object in the new path and name
+
+	//	- declare name and path variables
+	FString NewBlueprintName = "";
+
+	//	- try find valid name
+
+	const FString PathToCheck = DesiredFolder + _newBlueprintName;
+	if (DoesPathContainValidObject(PathToCheck))
+	{
+		//	- try find valid name if already existing
+		for (int32 i = 1; i < 999; i++)
+		{
+			//	- define new name and path
+			FString NewName = _newBlueprintName + FString::FromInt(i);
+			FString NewPath = DesiredFolder + NewName;
+
+			//	- check if available
+			if (!DoesPathContainValidObject(NewPath))
+			{
+				NewBlueprintName = NewName;
+				break;
+			}
+		}
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CreateObject: %s does not already exist."), *PathToCheck);
+		NewBlueprintName = _newBlueprintName;
+	}
+	
+	//	- check name validity
+	if (NewBlueprintName == "")
+	{
+		UE_LOG(LogTemp, Warning, TEXT("CreateObject: Failure! 999+ Items of same name!"));
+		return FReply::Unhandled();
+	}
+
+	//
+	// Run blueprint duplicate
+	CloneBlueprint(SourceObject, NewBlueprintName, DesiredFolder);
+	
+	return FReply::Handled();
+}
+
+inline bool Statics::DoesPathContainValidObject(const FString& ObjectPath)
+{
+	TSoftObjectPtr<UObject> ObjectPtr(ObjectPath);
+
+	// Check if the object pointer is valid
+	if (ObjectPtr.IsValid())
+	{
+		// Check if the object has been loaded
+		UObject* ResolvedObject = ObjectPtr.Get();
+		if (ResolvedObject)
+		{
+			// Object is valid and loaded
+			return true;
+		}
+		else
+		{
+			// Object is valid but not loaded
+			// You can optionally load the object using ObjectPtr.LoadSynchronous() here
+			return false;
+		}
+	}
+	else
+	{
+		// Object is not valid
+		return false;
+	}
 }
 
 template<class T>

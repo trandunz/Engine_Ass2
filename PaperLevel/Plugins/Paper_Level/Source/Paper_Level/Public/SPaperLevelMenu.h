@@ -91,25 +91,34 @@ public:
 	void ImprintCopyMapOntoCurrent();
 
 	void CreateAndAddLevelAsset();
-	void DuplicateBlueprintAsset(const FString& SourceAssetPath, const FString& DestinationAssetPath);
-	void LoadAndRenameAsset(const FString& SourceAssetPath, const FString& NewAssetName);
 private:
+	
 	FCustomOutputDeviceError* CustomErrorDevice;
 	
-	FString ToBeMapName{"TestLevel"};
+	FString ToBeMapName{"Map Name..."};
 	
 	bool IsTrackingMousePos{};
-
+	
 	const struct FGeometry* TextureGeo{};
+	
 	SImage* MapImageToPaint{};
+	
 	struct FSlateImageBrush* MapImageBrush{};
+	
 	UTexture2D* MapImageTexture{};
+	
 	UTexture2D* LastMapImageTexture{};
+	
 	TArray<UTexture2D*> SymbolTextures{};
+	
+	TArray<TSharedPtr<class IImageWrapper>> SymbolImageWrappers{};
+	
 	uint8* ImageTextureData{};
 	
 	SVerticalBox* ParentBox{nullptr};
+	
 	TMap<FUintVector2, TSharedRef<SBorder>> WorldGrid{};
+	
 	TMap<FUintVector2, TSharedRef<SBorder>> SymbolsGrid{};
 };
 
