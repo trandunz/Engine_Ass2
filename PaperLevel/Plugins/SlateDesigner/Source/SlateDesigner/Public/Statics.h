@@ -115,6 +115,7 @@ public:
 	void Construct(const FArguments& InArgs);
 
 	static bool CloneBlueprint(UObject* SourceBlueprint, const FString NewBlueprintName, const FString NewBlueprintPath);
+	static bool RenameBlueprint(UObject* SourceBlueprint, const FString NewBlueprintName);
 	static FReply CreateObject(const FString NewBlueprintPath, const FString NewBlueprintName);
 	static bool DoesPathContainValidObject(const FString& ObjectPath);
 
@@ -219,6 +220,8 @@ public:
 	 */
 	template<class T>
 	static TSharedRef<SBorder> CreateButton(T* _this, FString _text, TDelegate<void()>::TMethodPtr<T> _onPressed, UTexture2D* _texture);
+	template<class T>
+	static TSharedRef<SBorder> CreateButton(T* _this, FString _text, TDelegate<void(int)>::TMethodPtr<T> _onPressed, int _intParam, UTexture2D* _texture);
 
 	/**
  	* @brief Returns a border containing a button
@@ -285,6 +288,11 @@ inline bool Statics::CloneBlueprint(UObject* _sourceBlueprint, const FString _ne
 	UE_LOG(LogTemp, Warning, TEXT("CloneBlueprint: Success! Blueprint made."));
 	
 	return true;
+}
+
+inline bool Statics::RenameBlueprint(UObject* SourceBlueprint, const FString NewBlueprintName)
+{
+	return false;
 }
 
 inline FReply Statics::CreateObject(const FString _sourceBlueprintPath, const FString _newBlueprintName)
@@ -690,6 +698,43 @@ inline TSharedRef<SBorder> Statics::CreateButton(T* _this, FString _text, TDeleg
 	auto button = SNew(SButton)
 					.Text(FText::FromString(_text))
 					.OnPressed(_this, _onPressed);
+
+	button.Get().SetContent(
+			SNew(SImage)
+			.Image(new FSlateImageBrush(Cast<UTexture2D>(_texture), UE::Slate::FDeprecateVector2DParameter{50.0, 50.0})));
+	
+	return SNew(SBorder)
+			.Padding(1)
+			.BorderImage(FAppStyle::Get().GetBrush("DetailsView.CategoryMiddle"))
+			.BorderBackgroundColor(FLinearColor(0,0,0))
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Top)
+			[
+				SNew(SBorder)
+			.Padding(5)
+			.BorderImage(FAppStyle::Get().GetBrush("DetailsView.CategoryMiddle"))
+			.BorderBackgroundColor(GetInnerBackgroundColor())
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Top)
+			[
+				SNew(SHorizontalBox)
+				+SHorizontalBox::Slot()
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					button
+				]
+				]
+			];
+}
+
+template <class T>
+TSharedRef<SBorder> Statics::CreateButton(T* _this, FString _text, TDelegate<void(int)>::TMethodPtr<T> _onPressed,
+	int _intParam, UTexture2D* _texture)
+{
+	auto button = SNew(SButton)
+					.Text(FText::FromString(_text))
+					.OnPressed(_this, _onPressed, _intParam);
 
 	button.Get().SetContent(
 			SNew(SImage)

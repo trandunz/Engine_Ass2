@@ -45,7 +45,7 @@ public:
 	SLATE_END_ARGS()
 
 	void Construct(const FArguments& InArgs);
-
+	virtual void OnWindowClosed(const TSharedRef<SWindow>& WindowBeingClosed);
 	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
 	
 	void InitPaperLevelMenu();
@@ -53,31 +53,34 @@ public:
 	TSharedRef<SBorder> InitPaperLevelMenuContents();
 
 	void HandleTexturePainting();
+	void HandleSymbolStamping();
 	
 	TSharedRef<SBorder> CreateMapImage();
+	TSharedRef<SImage> CreatePreviewSymbolImage();
 	void CreatePaperMapGrid();
 	void CreateSymbolsGrid();
 	
-	void OnButtonClicked();
 	void OnMapNameChanged(const FText&);
-
-	void OnSpawnSymbolClicked();
-	void OnSellBinSymbolClicked();
-	void OnGrowPlotSymbolClicked();
+	
+	void OnSymbolClicked(int _symbol);
 
 	void OnCreateLevelClicked();
+	void OnRenameLevelClicked();
 	void OnClearClicked();
 	void OnEraserClicked();
 	void OnUndoClicked();
 	void OnRedoClicked();
+	
 
-	struct FSlateImageBrush* CreateImageBrushFromStyleSet(FName ImageName, const FVector2D& ImageSize, const FName& StyleSetName);
-
+	struct FSlateImageBrush* CreateImageBrushFromStyleSet(FName ImageName, const FVector2D& ImageSize, const FName& StyleSetName, UTexture2D* Texture, FSlateImageBrush* ImageBrush);
+	void CreateDuplicateMapTextureForUndo(const FVector2D& ImageSize);
+	
 	FReply OnImageMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent);;
 	FReply OnImageMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent);;
 
-	void EditTexel(UTexture2D* _texture, FIntVector2 _texel, RGBA* _mipData, RGBA _newColor, TEXTUREACTION _postUpdateAction = TEXTUREACTION::NON, int _radius = 1);
+	void EditTexel(UTexture2D* _texture, FIntVector2 _texel, RGBA* _mipData, RGBA _newColor, FSlateImageBrush* _ImageBrush, TEXTUREACTION _postUpdateAction = TEXTUREACTION::NON, int _radius = 1);
 
+	void* LockMipsBulkData_Safe(UTexture2D* _texture);
 	void UnlockMipsBulkData_Safe(UTexture2D* _texture);
 
 	TSharedRef<SVerticalBox> CreateControlsVertBox();
@@ -91,31 +94,37 @@ public:
 	void ImprintCopyMapOntoCurrent();
 
 	void CreateAndAddLevelAsset();
+
+	void SetPreviewSymbolImageVisiblity();
 private:
 	
 	FCustomOutputDeviceError* CustomErrorDevice;
 	
 	FString ToBeMapName{"Map Name..."};
+
+	bool IsStamping{true};
 	
 	bool IsTrackingMousePos{};
 	
+	SImage* MapImageToPaint{nullptr};
 	const struct FGeometry* TextureGeo{};
-	
-	SImage* MapImageToPaint{};
-	
 	struct FSlateImageBrush* MapImageBrush{};
+	UTexture2D* MapImageTexture{nullptr};
 	
-	UTexture2D* MapImageTexture{};
+	SImage* PreviewSymbolImage{nullptr};
+	const struct FGeometry* PreviewSymbolTextureGeo{};
+	struct FSlateImageBrush* PreviewSymbolImageBrush{};
+	UTexture2D* PreviewSymbolTexture{nullptr};
 	
-	UTexture2D* LastMapImageTexture{};
+	UTexture2D* LastMapImageTexture{nullptr};
 	
 	TArray<UTexture2D*> SymbolTextures{};
 	
 	TArray<TSharedPtr<class IImageWrapper>> SymbolImageWrappers{};
 	
-	uint8* ImageTextureData{};
-	
 	SVerticalBox* ParentBox{nullptr};
+	SOverlay* SymbolPreviewOverlay{nullptr};
+	SOverlay* GrandOverlay{nullptr};
 	
 	TMap<FUintVector2, TSharedRef<SBorder>> WorldGrid{};
 	
