@@ -13,10 +13,10 @@ enum class TEXTUREACTION
 
 struct RGBA
 {
-	FFloat32 A{};
-	FFloat32 G{};
-	FFloat32 B{};
-	FFloat32 R{};
+	uint8 B{};
+	uint8 G{};
+	uint8 R{};
+	uint8 A{};
 };
 
 class FCustomOutputDeviceError : public FOutputDeviceError
@@ -96,13 +96,19 @@ public:
 	void CreateAndAddLevelAsset();
 
 	void SetPreviewSymbolImageVisiblity();
+
+	bool ResizeImageData(const TArray<uint8>& SourceData, int32 SourceWidth, int32 SourceHeight,
+	int32 DestWidth, int32 DestHeight, TArray<uint8>& DestData);
 private:
+
+	FVector2D SymbolTextureSize{80,80};
+	FVector2D PreviewSymbolTextureSize{80,80};
 	
 	FCustomOutputDeviceError* CustomErrorDevice;
 	
 	FString ToBeMapName{"Map Name..."};
 
-	bool IsStamping{true};
+	bool IsStamping{false};
 	
 	bool IsTrackingMousePos{};
 	

@@ -26,6 +26,7 @@ public class Paper_Level : ModuleRules
 			new string[]
 			{
 				"Core",
+				
 				// ... add other public dependencies that you statically link with here ...
 			}
 			);
@@ -44,7 +45,10 @@ public class Paper_Level : ModuleRules
 				"Slate",
 				"SlateCore", 
 				"SlateDesigner",
-				"RenderCore", "EditorScriptingUtilities"
+				"RenderCore", 
+				"EditorScriptingUtilities",
+				"ImageCore",
+				"ImageWrapper"
 			}
 			);
 		
