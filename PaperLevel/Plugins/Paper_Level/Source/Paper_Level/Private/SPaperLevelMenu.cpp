@@ -45,6 +45,7 @@
 #include "Engine/AssetManager.h"
 #include "Engine/ObjectLibrary.h"
 #include "Containers/UnrealString.h"
+#include "GameFramework/PlayerStart.h"
 #include "Misc/OutputDeviceNull.h"
 
 
@@ -110,6 +111,8 @@ void SPaperLevelMenu::OnWindowClosed(const TSharedRef<SWindow>& WindowBeingClose
 {
 	if (WindowBeingClosed == FSlateApplication::Get().GetActiveTopLevelWindow())
 	{
+		UnlockAllMips();
+		
 		if (MapImageTexture && LastMapImageTexture)
 		{
 			UnlockMipsBulkData_Safe(MapImageTexture);
@@ -140,6 +143,8 @@ void SPaperLevelMenu::OnWindowClosed(const TSharedRef<SWindow>& WindowBeingClose
 			PreviewSymbolTexture->RemoveFromRoot();
 			PreviewSymbolTexture->MarkAsGarbage();
 		}
+
+		SymbolPositionData.Empty();
 	}
 }
 
@@ -148,6 +153,15 @@ void SPaperLevelMenu::Tick(const FGeometry& AllottedGeometry, const double InCur
 {
 	SCompoundWidget::Tick(AllottedGeometry, InCurrentTime, InDeltaTime);
 
+	if (SpawnedActors.Num() <= 0)
+	{
+		for(int i = 0; i < ActorsToSpawn.Num(); i++)
+		{
+			SpawnedActors.Add(ActorsToSpawn[i]);
+		}
+		ActorsToSpawn.Empty();
+	}
+	
 	HandleTexturePainting();
 	SetPreviewSymbolImageVisiblity();
 	//UnlockMipsBulkData_Safe(MapImageTexture);
@@ -251,7 +265,6 @@ void SPaperLevelMenu::HandleTexturePainting()
 								MapImageBrush,
 								TEXTUREACTION::UPDATE,
 								3);
-							UnlockMipsBulkData_Safe(MapImageTexture);
 
 							///UE_LOG(LogTemp, Warning, TEXT("Texture Colour Updated") );
 						}
@@ -259,6 +272,7 @@ void SPaperLevelMenu::HandleTexturePainting()
 				}
 			}
 		}
+		UnlockAllMips();
 	}
 }
 
@@ -324,6 +338,9 @@ TSharedRef<SImage>  SPaperLevelMenu::CreatePreviewSymbolImage()
 	PreviewSymbolTexture = UTexture2D::CreateTransient(ImageSize.X, ImageSize.Y, PF_B8G8R8A8);
 	PreviewSymbolImageBrush = CreateImageBrushFromStyleSet(ImageName, {PreviewSymbolTextureSize.X,PreviewSymbolTextureSize.Y}, StyleSetName, PreviewSymbolTexture, PreviewSymbolImageBrush);
 	PreviewSymbolTextureGeo = &PreviewSymbolImage->GetTickSpaceGeometry();
+
+	for(int i = 0; i < 500*500; i++)
+		SymbolPositionData.Add(10);
 	
 	return SNew(SImage)
 			.Image(PreviewSymbolImageBrush)
@@ -368,6 +385,8 @@ void SPaperLevelMenu::OnSymbolClicked(int _symbol)
 	if (_symbol < SymbolTextures.Num())
 	{
 		IsStamping = true;
+
+		CurrentlySelectedSymbol = _symbol;
 		
 		FTexture2DMipMap& Mip = PreviewSymbolTexture->GetPlatformData()->Mips[0];
 		FTexture2DMipMap& Mip2 = SymbolTextures[_symbol]->GetPlatformData()->Mips[0];
@@ -389,6 +408,7 @@ void SPaperLevelMenu::OnSymbolClicked(int _symbol)
 			PreviewSymbolImageBrush->SetResourceObject(PreviewSymbolTexture);
 		}
 	}
+	UnlockAllMips();
 }
 
 void SPaperLevelMenu::OnCreateLevelClicked()
@@ -413,6 +433,20 @@ void SPaperLevelMenu::OnRenameLevelClicked()
 	}
 }
 
+void SPaperLevelMenu::OnSpawnObjectsInLevelClicked()
+{
+	if (HasSymbolsBeenPlaced())
+	{
+		for(int y = 0; y < MapImageTexture->GetPlatformData()->SizeY; y++)
+		{
+			for(int x = 0; x < MapImageTexture->GetPlatformData()->SizeX; x++)
+			{
+				SpawnObjectInWorldFromSymbolID(x, y);
+			}
+		}
+	}
+}
+
 void SPaperLevelMenu::OnClearClicked()
 {
 	//LastAction = &SPaperLevelMenu::OnClearClicked;
@@ -425,7 +459,24 @@ void SPaperLevelMenu::OnClearClicked()
 			EditTexel(MapImageTexture, {250, 250}, mipData, {255,255,255,255}, MapImageBrush,TEXTUREACTION::UPDATE, 250);
 		}
 	}
-	UnlockMipsBulkData_Safe(MapImageTexture);
+
+	for(auto actor : SpawnedActors)
+	{
+		actor->Destroy();
+		actor = nullptr;
+	}
+	SpawnedActors.Empty();
+	SymbolPositionData.Empty();
+	for(auto actor : ActorsToSpawn)
+	{
+		actor->Destroy();
+		actor = nullptr;
+	}
+	ActorsToSpawn.Empty();
+	for(int i = 0; i < MapImageTexture->GetPlatformData()->SizeX * MapImageTexture->GetPlatformData()->SizeY; i++)
+		SymbolPositionData.Add(10);
+	
+	UnlockAllMips();
 }
 
 void SPaperLevelMenu::OnEraserClicked()
@@ -449,13 +500,12 @@ FSlateImageBrush* SPaperLevelMenu::CreateImageBrushFromStyleSet(FName ImageName,
 	if (!Texture)
 		return nullptr;
 	
-	FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
-	AssetRegistryModule.Get().SearchAllAssets(true);
+	//FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<FAssetRegistryModule>("AssetRegistry");
+	//AssetRegistryModule.Get().SearchAllAssets(true);
 
 	// Set the texture settings and properties
 	Texture->CompressionSettings = TC_Default;
 	Texture->MipGenSettings = TMGS_SimpleAverage;
-
 	
 	if (Texture->GetPlatformData()->Mips.Num() == 0)
 	{
@@ -515,31 +565,15 @@ FReply SPaperLevelMenu::OnImageMouseButtonDown(const FGeometry& MyGeometry, cons
 		if (IsStamping)
 		{
 			IsStamping = false;
-
-			ImprintCurrentMapOntoCopy();
-			// Mips
-			FTexture2DMipMap& Mip = PreviewSymbolTexture->GetPlatformData()->Mips[0];
-			FTexture2DMipMap& Mip2 = PreviewSymbolTexture->GetPlatformData()->Mips[0];
-			if (!Mip.BulkData.IsLocked() && !Mip2.BulkData.IsLocked())
-			{
-				auto Data = static_cast<RGBA*>(Mip.BulkData.Lock(LOCK_READ_WRITE));
-				auto Data2 = static_cast<RGBA*>(Mip2.BulkData.Lock(LOCK_READ_WRITE));
-				for(int y = 0; y < Mip.SizeY; y++)
-				{
-					for(int x = 0; x < Mip.SizeX; x++)
-					{
-						if (y == Mip.SizeY - 1 && x == Mip.SizeX - 1)
-							EditTexel(MapImageTexture, {x,y}, Data,  Data[y * Mip.SizeX + x],MapImageBrush, TEXTUREACTION::UPDATE);
-						else
-							EditTexel(MapImageTexture, {x,y}, Data,  Data[y * Mip.SizeX + x],MapImageBrush);
-					}
-				}
-			}
+			
+			CopyCurrentSymbolOntoMap();
 		}
 		else
 		{
 			IsTrackingMousePos = true;
 		}
+
+		UnlockAllMips();
 		
 		return FReply::Handled();
 	}
@@ -553,6 +587,8 @@ FReply SPaperLevelMenu::OnImageMouseButtonUp(const FGeometry& MyGeometry, const 
 	{
 		IsTrackingMousePos = false;
 		IsStamping = false;
+
+		UnlockAllMips();
 
 		return FReply::Handled();
 	}
@@ -811,14 +847,7 @@ TSharedRef<SVerticalBox> SPaperLevelMenu::CreateGnrlVertBox()
 		.HAlign(HAlign_Center)
 		.FillWidth(1)
 		[
-			Statics::CreateButton<SPaperLevelMenu>(this, "Rename", &SPaperLevelMenu::OnRenameLevelClicked)
-		];
-			
-		GeneralBoundVertBox->AddSlot()
-		.HAlign(HAlign_Center)
-		.AutoHeight()
-		[
-			Statics::CreateInputField<SPaperLevelMenu>(this, "Map Title...", &SPaperLevelMenu::OnMapNameChanged)
+			Statics::CreateButton<SPaperLevelMenu>(this, "Create", &SPaperLevelMenu::OnSpawnObjectsInLevelClicked)
 		];
 		GeneralBoundVertBox->AddSlot()
 		.HAlign(HAlign_Center)
@@ -899,7 +928,6 @@ void SPaperLevelMenu::CreateSymbolsTextures()
 			// Failed to create the image wrapper
 			return;
 		}
-		SymbolImageWrappers.Add(ImageWrapper);
 
 		if (!ImageWrapper->SetCompressed(FileData.GetData(), FileData.Num()))
 		{
@@ -932,6 +960,8 @@ void SPaperLevelMenu::CreateSymbolsTextures()
 
 		SymbolTextures[SymbolTextures.Num() - 1]->UpdateResource();
 	}
+
+	UnlockAllMips();
 }
 
 void SPaperLevelMenu::ImprintCurrentMapOntoCopy()
@@ -960,6 +990,8 @@ void SPaperLevelMenu::ImprintCurrentMapOntoCopy()
 		}
 		UE_LOG(LogTemp, Warning, TEXT("Imprint Current Map Onto Copy") );
 	}
+
+	UnlockAllMips();
 }
 
 void SPaperLevelMenu::ImprintCopyMapOntoCurrent()
@@ -987,6 +1019,8 @@ void SPaperLevelMenu::ImprintCopyMapOntoCurrent()
 		}
 		UE_LOG(LogTemp, Warning, TEXT("Imprint Copy Map Onto Current") );
 	}
+
+	UnlockAllMips();
 }
 
 void SPaperLevelMenu::CreateAndAddLevelAsset()
@@ -1007,8 +1041,137 @@ void SPaperLevelMenu::SetPreviewSymbolImageVisiblity()
 	}
 }
 
+void SPaperLevelMenu::CopyCurrentSymbolOntoMap()
+{
+	auto mousePos = FSlateApplication::Get().GetCursorPos();
+	auto localMousePosition = TextureGeo->AbsoluteToLocal(mousePos);
+
+	if (localMousePosition.Y <  MapImageTexture->GetPlatformData()->SizeY
+		&& localMousePosition.X < MapImageTexture->GetPlatformData()->SizeX
+		&& localMousePosition.Y >= 0 && localMousePosition.X >= 0)
+	{
+		ImprintCurrentMapOntoCopy();
+		// Mips
+		FTexture2DMipMap& Mip = PreviewSymbolTexture->GetPlatformData()->Mips[0];
+		FTexture2DMipMap& Mip2 = MapImageTexture->GetPlatformData()->Mips[0];
+		if (!Mip.BulkData.IsLocked() && !Mip2.BulkData.IsLocked())
+		{
+			auto Data = static_cast<RGBA*>(Mip.BulkData.Lock(LOCK_READ_ONLY));
+			auto Data2 = static_cast<RGBA*>(Mip2.BulkData.Lock(LOCK_READ_WRITE));
+			int32 index{};
+			int32 previewSymbolIndex{};
+			for(int32 i = localMousePosition.Y - PreviewSymbolTexture->GetPlatformData()->SizeY/2; i < localMousePosition.Y + PreviewSymbolTexture->GetPlatformData()->SizeY/2; i++)
+			{
+				for(int32 j = localMousePosition.X - PreviewSymbolTexture->GetPlatformData()->SizeX/2;j < localMousePosition.X + PreviewSymbolTexture->GetPlatformData()->SizeX/2; j++)
+				{
+					previewSymbolIndex++;
+				
+					index = i * MapImageTexture->GetPlatformData()->SizeX + j;
+					//UE_LOG(LogTemp, Warning, TEXT("Index Clicked: %s"), *FString::FromInt(index) )
+					if (Data[previewSymbolIndex].A < 255)
+					{
+						Data2[index].A = Data2[index].A;
+						Data2[index].G = Data2[index].G;
+						Data2[index].B = Data2[index].B;
+						Data2[index].R = Data2[index].R;
+					}
+					else
+					{
+						Data2[index].A = 255;
+						Data2[index].G = Data[previewSymbolIndex].G;
+						Data2[index].B = Data[previewSymbolIndex].B;
+						Data2[index].R = Data[previewSymbolIndex].R;
+					}
+				}
+			}
+
+			index =  ((int32)(localMousePosition.Y)) * MapImageTexture->GetPlatformData()->SizeX + ((int32)localMousePosition.X);
+			index = FMath::Clamp(index, 0, (MapImageTexture->GetPlatformData()->SizeY * MapImageTexture->GetPlatformData()->SizeX) - 1);
+			SymbolPositionData[index] = CurrentlySelectedSymbol;
+			UE_LOG(LogTemp, Warning, TEXT("Placed symbol %s onto map at position %s %s"), *FString::FromInt(CurrentlySelectedSymbol), *FString::FromInt(localMousePosition.X), *FString::FromInt(localMousePosition.Y));
+
+			PreviewSymbolTexture->GetPlatformData()->Mips[0].BulkData.Unlock();
+			MapImageTexture->GetPlatformData()->Mips[0].BulkData.Unlock();
+			MapImageTexture->UpdateResource();
+			MapImageBrush->SetResourceObject(MapImageTexture);
+		}
+	}
+
+	UnlockAllMips();
+}
+
+void SPaperLevelMenu::SpawnObjectInWorldFromSymbolID(int _x, int _y)
+{
+	int arraySizeX {MapImageTexture->GetPlatformData()->SizeX};
+	int arraySizeY {MapImageTexture->GetPlatformData()->SizeY};
+	FVector spawnPos = {(float)_x, (float)_y, 0.0f};
+	spawnPos.X -= MapImageTexture->GetPlatformData()->SizeX / 2;
+	spawnPos.Y -= MapImageTexture->GetPlatformData()->SizeY / 2;
+	if (spawnPos.X < -arraySizeX / 2
+		|| spawnPos.X > arraySizeX / 2
+		|| spawnPos.Y < -arraySizeY / 2
+		|| spawnPos.Y > arraySizeY / 2)
+	{
+		return;
+	}
+
+	for(auto actor : SpawnedActors)
+	{
+		actor->Destroy(); 
+		actor = nullptr;
+	}
+	SpawnedActors.Empty();
+	
+	switch(SymbolPositionData[_y * arraySizeX + _x])
+	{
+	case 0:
+		{
+			FString newName{"New Spawn Point X:" };
+			newName += FString::FromInt(spawnPos.X);
+			newName += " Y:" + FString::FromInt(spawnPos.Y);
+				
+			auto currentLevel = GEditor->GetEditorWorldContext().World()->GetCurrentLevel();
+			auto newActor = GEditor->AddActor(currentLevel, APlayerStart::StaticClass(), FTransform{spawnPos});
+			
+			newActor->SetActorLabel(newName);
+			ActorsToSpawn.Add(newActor);
+			break;
+		}
+	case 1:
+		{
+			FString newName{"New Sell Bin X:" };
+			newName += FString::FromInt(spawnPos.X);
+			newName += " Y:" + FString::FromInt(spawnPos.Y);
+				
+			auto currentLevel = GEditor->GetEditorWorldContext().World()->GetCurrentLevel();
+			auto newActor = GEditor->AddActor(currentLevel, ACharacter::StaticClass(), FTransform{spawnPos});
+				
+			newActor->SetActorLabel(newName);
+			ActorsToSpawn.Add(newActor);
+			break;
+		}
+	case 2:
+		{
+			FString newName{"New Grow / Farm plot X:" };
+			newName += FString::FromInt(spawnPos.X);
+			newName += " Y:" + FString::FromInt(spawnPos.Y);
+				
+			auto currentLevel = GEditor->GetEditorWorldContext().World()->GetCurrentLevel();
+			auto newActor = GEditor->AddActor(currentLevel, ACharacter::StaticClass(), FTransform{spawnPos});
+				
+			newActor->SetActorLabel(newName);
+			ActorsToSpawn.Add(newActor);
+			break;
+		}
+	default:
+		break;
+	}
+
+
+}
+
 bool SPaperLevelMenu::ResizeImageData(const TArray<uint8>& SourceData, int32 SourceWidth, int32 SourceHeight,
-	int32 DestWidth, int32 DestHeight, TArray<uint8>& DestData)
+                                      int32 DestWidth, int32 DestHeight, TArray<uint8>& DestData)
 {
 	// Check if the source image is already the desired size
 	if (SourceWidth == DestWidth && SourceHeight == DestHeight)
@@ -1050,6 +1213,62 @@ bool SPaperLevelMenu::ResizeImageData(const TArray<uint8>& SourceData, int32 Sou
 	}
 
 	return true;
+}
+
+void SPaperLevelMenu::UnlockAllMips()
+{
+	if (MapImageTexture)
+		UnlockMipsBulkData_Safe(MapImageTexture);
+	if (PreviewSymbolTexture)
+		UnlockMipsBulkData_Safe(PreviewSymbolTexture);
+	if (LastMapImageTexture)
+		UnlockMipsBulkData_Safe(LastMapImageTexture);
+	if (SymbolTextures.Num() > 0)
+	{
+		for(auto texture : SymbolTextures)
+		{
+			if (texture)
+			{
+				UnlockMipsBulkData_Safe(texture);
+			}
+		}
+	}
+	
+}
+
+bool SPaperLevelMenu::HasSymbolsBeenPlaced()
+{
+	bool hasBeenPlaced{};
+	for (int32 y = 0; y < MapImageTexture->GetPlatformData()->SizeY; y++)
+	{
+		for (int32 x = 0; x < MapImageTexture->GetPlatformData()->SizeX; x++)
+		{
+			int index = y * MapImageTexture->GetPlatformData()->SizeX + x;
+			if (SymbolPositionData[index] < 10)
+			{
+				return true;
+			}
+		}
+	}
+	return hasBeenPlaced;
+}
+
+UObject* SPaperLevelMenu::LoadInSymbolBlueprints(FString _name)
+{
+	FString path = "/Game/" + _name;
+	if (UObject* theBlueprint = LoadObject<UObject>(nullptr, *path))
+	{
+		LoadedSymbolBlueprints.Add(theBlueprint);
+		
+		return theBlueprint;
+	}
+	
+	return nullptr;
+}
+
+void SPaperLevelMenu::AddNewSymbolFromBlueprint(FString _blueprintPath)
+{
+	
 }
 
 

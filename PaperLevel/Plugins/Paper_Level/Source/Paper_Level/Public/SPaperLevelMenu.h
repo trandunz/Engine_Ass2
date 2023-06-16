@@ -66,17 +66,17 @@ public:
 
 	void OnCreateLevelClicked();
 	void OnRenameLevelClicked();
+	void OnSpawnObjectsInLevelClicked();
 	void OnClearClicked();
 	void OnEraserClicked();
 	void OnUndoClicked();
 	void OnRedoClicked();
-	
 
 	struct FSlateImageBrush* CreateImageBrushFromStyleSet(FName ImageName, const FVector2D& ImageSize, const FName& StyleSetName, UTexture2D* Texture, FSlateImageBrush* ImageBrush);
 	void CreateDuplicateMapTextureForUndo(const FVector2D& ImageSize);
 	
-	FReply OnImageMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent);;
-	FReply OnImageMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent);;
+	FReply OnImageMouseButtonDown(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent);
+	FReply OnImageMouseButtonUp(const FGeometry& MyGeometry, const FPointerEvent& MouseEvent);
 
 	void EditTexel(UTexture2D* _texture, FIntVector2 _texel, RGBA* _mipData, RGBA _newColor, FSlateImageBrush* _ImageBrush, TEXTUREACTION _postUpdateAction = TEXTUREACTION::NON, int _radius = 1);
 
@@ -97,10 +97,25 @@ public:
 
 	void SetPreviewSymbolImageVisiblity();
 
+	void CopyCurrentSymbolOntoMap();
+
+	void SpawnObjectInWorldFromSymbolID(int _x, int _y);
+
 	bool ResizeImageData(const TArray<uint8>& SourceData, int32 SourceWidth, int32 SourceHeight,
 	int32 DestWidth, int32 DestHeight, TArray<uint8>& DestData);
-private:
 
+	void UnlockAllMips();
+
+	bool HasSymbolsBeenPlaced();
+
+	UObject* LoadInSymbolBlueprints(FString _name);
+
+	void AddNewSymbolFromBlueprint(FString _blueprintPath);
+private:
+	int totalSymbolCount{1};
+	
+	TArray<UObject*> LoadedSymbolBlueprints;
+	
 	FVector2D SymbolTextureSize{80,80};
 	FVector2D PreviewSymbolTextureSize{80,80};
 	
@@ -116,7 +131,12 @@ private:
 	const struct FGeometry* TextureGeo{};
 	struct FSlateImageBrush* MapImageBrush{};
 	UTexture2D* MapImageTexture{nullptr};
+
+	TArray<AActor*> SpawnedActors{};
+	TArray<AActor*> ActorsToSpawn{};
 	
+	TArray<uint8> SymbolPositionData {};
+	uint8 CurrentlySelectedSymbol{};
 	SImage* PreviewSymbolImage{nullptr};
 	const struct FGeometry* PreviewSymbolTextureGeo{};
 	struct FSlateImageBrush* PreviewSymbolImageBrush{};
@@ -126,8 +146,6 @@ private:
 	
 	TArray<UTexture2D*> SymbolTextures{};
 	
-	TArray<TSharedPtr<class IImageWrapper>> SymbolImageWrappers{};
-	
 	SVerticalBox* ParentBox{nullptr};
 	SOverlay* SymbolPreviewOverlay{nullptr};
 	SOverlay* GrandOverlay{nullptr};
@@ -135,6 +153,7 @@ private:
 	TMap<FUintVector2, TSharedRef<SBorder>> WorldGrid{};
 	
 	TMap<FUintVector2, TSharedRef<SBorder>> SymbolsGrid{};
+	TArray<SButton*> SymbolsButtons{};
 };
 
 
