@@ -209,6 +209,14 @@ public:
 		TDelegate<void()>::TMethodPtr<T> _onReset,
 		int _vectorType = 0);
 
+	template <class T>
+	static TSharedRef<SBorder> CreateVectorInputField2D(T* _this, FString _name,
+	TDelegate<TOptional<double>()>::TConstMethodPtr<T> _valueX,
+	TDelegate<TOptional<double>()>::TConstMethodPtr<T> _valueY,
+	TDelegate<void(double)>::TMethodPtr<T> _onChangedX,
+	TDelegate<void(double)>::TMethodPtr<T> _onChangedY,
+	TDelegate<void()>::TMethodPtr<T> _onReset);
+
 	/**
 	 * @brief Returns a border containing a button
 	 * @tparam T 
@@ -663,6 +671,75 @@ inline TSharedRef<SBorder> Statics::CreateVectorInputField(T* _this, FString _na
 }
 
 template <class T>
+inline TSharedRef<SBorder> Statics::CreateVectorInputField2D(T* _this, FString _name,
+	TDelegate<TOptional<double>()>::TConstMethodPtr<T> _valueX,
+	TDelegate<TOptional<double>()>::TConstMethodPtr<T> _valueY,
+	TDelegate<void(double)>::TMethodPtr<T> _onChangedX,
+	TDelegate<void(double)>::TMethodPtr<T> _onChangedY,
+	TDelegate<void()>::TMethodPtr<T> _onReset)
+{
+	return SNew(SBorder)
+			.Padding(1)
+			.BorderImage(FAppStyle::Get().GetBrush("DetailsView.CategoryMiddle"))
+			.BorderBackgroundColor(FLinearColor(0,0,0))
+			.HAlign(HAlign_Fill)
+			.VAlign(VAlign_Top)
+			[
+				SNew(SHorizontalBox)
+				+SHorizontalBox::Slot()
+				.VAlign(VAlign_Center)
+				[
+					SNew(SBorder)
+					.BorderImage(FAppStyle::Get().GetBrush("DetailsView.CategoryMiddle"))
+					.BorderBackgroundColor(GetInnerBackgroundColor())
+					.Padding(5)
+					[
+						SNew(SHorizontalBox)
+						+SHorizontalBox::Slot()
+						.AutoWidth()
+						.HAlign(HAlign_Left)
+						.VAlign(VAlign_Center)
+						[
+							SNew(STextBlock)
+							.Margin(5)
+							.Text(FText::FromString(_name))
+						]
+						+SHorizontalBox::Slot()
+						.HAlign(HAlign_Fill)
+						.VAlign(VAlign_Center)
+						[
+							SNew(SHorizontalBox)
+							+ SHorizontalBox::Slot()
+							.AutoWidth()
+							[
+								SNew(SNumericEntryBox<double>)
+								.OnValueChanged(_this, _onChangedX)
+								.Value(_this, _valueX)
+							]
+							+ SHorizontalBox::Slot()
+							.AutoWidth()
+							[
+								SNew(SNumericEntryBox<double>)
+								.OnValueChanged(_this, _onChangedY)
+								.Value(_this, _valueY)
+							]
+						]
+						+SHorizontalBox::Slot()
+						.AutoWidth()
+						.HAlign(HAlign_Right)
+						.VAlign(VAlign_Center)
+						[
+						SNew(SButton)
+							.HAlign(HAlign_Center)
+							.Text(FText::FromString("Reset"))
+							.OnPressed(_this, _onReset)
+						]
+					]
+				]
+			];
+}
+
+template <class T>
 inline TSharedRef<SBorder> Statics::CreateButton(T* _this, FString _text, TDelegate<void()>::TMethodPtr<T> _onPressed)
 {
 	return SNew(SBorder)
@@ -734,6 +811,7 @@ TSharedRef<SBorder> Statics::CreateButton(T* _this, FString _text, TDelegate<voi
 {
 	auto button = SNew(SButton)
 					.Text(FText::FromString(_text))
+					.VAlign(VAlign_Center)
 					.OnPressed(_this, _onPressed, _intParam);
 
 	button.Get().SetContent(
@@ -748,21 +826,21 @@ TSharedRef<SBorder> Statics::CreateButton(T* _this, FString _text, TDelegate<voi
 			.VAlign(VAlign_Top)
 			[
 				SNew(SBorder)
-			.Padding(5)
-			.BorderImage(FAppStyle::Get().GetBrush("DetailsView.CategoryMiddle"))
-			.BorderBackgroundColor(GetInnerBackgroundColor())
-			.HAlign(HAlign_Fill)
-			.VAlign(VAlign_Top)
-			[
-				SNew(SHorizontalBox)
-				+SHorizontalBox::Slot()
-				.HAlign(HAlign_Center)
-				.VAlign(VAlign_Center)
+				.Padding(5)
+				.BorderImage(FAppStyle::Get().GetBrush("DetailsView.CategoryMiddle"))
+				.BorderBackgroundColor(GetInnerBackgroundColor())
+				.HAlign(HAlign_Fill)
+				.VAlign(VAlign_Top)
 				[
-					button
-				]
-				]
-			];
+					SNew(SHorizontalBox)
+					+SHorizontalBox::Slot()
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+					[
+						button
+					]
+					]
+				];
 }
 
 inline FSlateColor Statics::GetInnerBackgroundColor()

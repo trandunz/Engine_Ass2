@@ -48,7 +48,8 @@ public class Paper_Level : ModuleRules
 				"RenderCore", 
 				"EditorScriptingUtilities",
 				"ImageCore",
-				"ImageWrapper"
+				"ImageWrapper",
+				"ContentBrowser"
 			}
 			);
 		

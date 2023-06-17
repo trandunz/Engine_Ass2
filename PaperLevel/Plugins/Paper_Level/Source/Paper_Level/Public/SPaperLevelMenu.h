@@ -49,6 +49,7 @@ public:
 	virtual void Tick(const FGeometry& AllottedGeometry, const double InCurrentTime, const float InDeltaTime) override;
 	
 	void InitPaperLevelMenu();
+	void InitMouseCallbacks();
 
 	TSharedRef<SBorder> InitPaperLevelMenuContents();
 
@@ -71,6 +72,8 @@ public:
 	void OnEraserClicked();
 	void OnUndoClicked();
 	void OnRedoClicked();
+
+	void OnLevelChange(unsigned);
 
 	struct FSlateImageBrush* CreateImageBrushFromStyleSet(FName ImageName, const FVector2D& ImageSize, const FName& StyleSetName, UTexture2D* Texture, FSlateImageBrush* ImageBrush);
 	void CreateDuplicateMapTextureForUndo(const FVector2D& ImageSize);
@@ -107,12 +110,37 @@ public:
 	void UnlockAllMips();
 
 	bool HasSymbolsBeenPlaced();
+	bool HasWorldBoundaryBeenDrawn();
 
 	UObject* LoadInSymbolBlueprints(FString _name);
 
 	void AddNewSymbolFromBlueprint(FString _blueprintPath);
+
+	void OpenAssetPicker();
+
+	void PlaceAndSpawnCustomSymbol(FVector2D _mousePos);
+
+	void ToggleWorldBoundaryFreedraw();
+
+	void SpawnFreshlyDrawnWorldBoundary();
+
+	void SpawnColliderInWorldFromPosition(int _x, int _y);
+
+	void OnWorldSizeXChanged(double _newValue);
+	void OnWorldSizeYChanged(double _newValue);
+	TOptional<double> GetWorldSizeX() const;
+	TOptional<double> GetWorldSizeY() const;
+	void OnResetWorldSize();
+
+	void FocusMapMiddle();
+
+	void CheckForActorsToSpawn();
+
+	void CreateParentWidgets();
 private:
-	int totalSymbolCount{1};
+	float WorldBoundaryZExtent{200};
+	
+	FIntVector2 DesiredMapSize{1000, 1000};
 	
 	TArray<UObject*> LoadedSymbolBlueprints;
 	
@@ -126,6 +154,8 @@ private:
 	bool IsStamping{false};
 	
 	bool IsTrackingMousePos{};
+
+	bool IsDrawingWorldBoundary{};
 	
 	SImage* MapImageToPaint{nullptr};
 	const struct FGeometry* TextureGeo{};
@@ -134,6 +164,9 @@ private:
 
 	TArray<AActor*> SpawnedActors{};
 	TArray<AActor*> ActorsToSpawn{};
+
+	TArray<AActor*> SpawnedWBActors{};
+	TArray<AActor*> WBActorsToSpawn{};
 	
 	TArray<uint8> SymbolPositionData {};
 	uint8 CurrentlySelectedSymbol{};
@@ -154,6 +187,9 @@ private:
 	
 	TMap<FUintVector2, TSharedRef<SBorder>> SymbolsGrid{};
 	TArray<SButton*> SymbolsButtons{};
+	
+	SWidget* AssetPickerWidget{nullptr};
+	FAssetData LastSelectedAsset;
 };
 
 
